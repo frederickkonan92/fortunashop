@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
+import SupportButton from './support-button'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -28,5 +29,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <SupportButton />
+    </>
+  )
+
+
 }

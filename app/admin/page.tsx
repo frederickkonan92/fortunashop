@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import AdminNav from './nav'
 import { formatPrice, statusStyle, statusLabel, whatsappLink } from '@/lib/utils'
 
 export default function AdminPage() {
@@ -61,6 +62,7 @@ export default function AdminPage() {
           </button>
        </div>
       </header>
+     <AdminNav shopSlug={shop?.slug} />
 
       {/* KPIs */}
       <div className="bg-fs-ink px-4 pb-5">
