@@ -40,15 +40,11 @@ export default function AdminPage() {
       supabase.from('delivery_tokens').insert({ order_id: order.id, token: token })
     }
     var message = 'Livraison ' + order.order_number + '\nClient : ' + order.customer_name + '\nTel : ' + order.customer_phone + '\nAdresse : ' + (order.customer_address || 'Retrait en boutique') + '\nMontant : ' + order.total.toLocaleString() + ' FCFA' + confirmLink
-    console.log("MESSAGE:", message)
-    console.log("CONFIRM LINK:", confirmLink)
     window.location.href = 'https://wa.me/' + shop.delivery_phone + '?text=' + encodeURIComponent(message)
   }
 
   var handleLogout = async function() {
     await supabase.auth.signOut()
-    console.log("MESSAGE:", message)
-    console.log("CONFIRM LINK:", confirmLink)
     window.location.href = '/admin/login'
   }
 
