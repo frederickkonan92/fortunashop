@@ -122,7 +122,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                         -
                       </button>
                       <span className="font-bold text-sm">{qty}</span>
-                      <button onClick={function() { cart.updateQuantity(product.id, qty + 1) }}
+                      <button onClick={function() { cart.updateQuantity(product.id, product.stock_quantity != null ? Math.min(qty + 1, product.stock_quantity) : qty + 1) }}
                               className="w-8 h-8 rounded-lg bg-fs-ink text-white font-bold text-sm
                                          flex items-center justify-center">
                         +

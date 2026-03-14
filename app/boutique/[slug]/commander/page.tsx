@@ -64,6 +64,15 @@ export default function CommanderPage() {
       })
       await supabase.from('order_items').insert(orderItems)
 
+      // Decrementer le stock pour chaque produit commande
+      for (var i = 0; i < cart.items.length; i++) {
+        var item = cart.items[i]
+        if (item.stock_quantity != null) {
+          var newStock = Math.max(0, item.stock_quantity - item.quantity)
+          await supabase.from("products").update({ stock_quantity: newStock, is_active: newStock > 0 }).eq("id", item.id)
+        }
+      }
+
       var itemsList = cart.items.map(function(item) {
         return item.name + ' x' + item.quantity
       }).join(', ')
