@@ -46,6 +46,7 @@ export default function ProduitsPage() {
   var maxEdits = editLimits[shop?.plan || 'starter'] || 2
   var [monthEdits, setMonthEdits] = useState(0)
   var maxProducts = planLimits[shop?.plan || "starter"] || 20
+  var canAddProduct = products.length < maxProducts
   var canEdit = shop?.plan === 'premium' || monthEdits < maxEdits
 
   var handleChange = function(e: any) { setForm({ ...form, [e.target.name]: e.target.value }) }
