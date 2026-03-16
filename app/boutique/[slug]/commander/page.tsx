@@ -8,14 +8,16 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function CommanderPage() {
-  const params = useParams()
-  const slug = params.slug as string
-  const cart = useCart()
+  var params = useParams()
+  var slug = params.slug as string
+  var cart = useCart()
 
-  const [shop, setShop] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [confirmation, setConfirmation] = useState<any>(null)
-  const [form, setForm] = useState({
+  var [shop, setShop] = useState<any>(null)
+  var [loading, setLoading] = useState(false)
+  var [step, setStep] = useState('form')
+  var [confirmation, setConfirmation] = useState<any>(null)
+  var [paymentMode, setPaymentMode] = useState('')
+  var [form, setForm] = useState({
     name: '',
     phone: '',
     address: '',
@@ -24,8 +26,7 @@ export default function CommanderPage() {
 
   useEffect(function() {
     async function load() {
-      var res = await supabase
-        .from('shops').select('*').eq('slug', slug).single()
+      var res = await supabase.from('shops').select('*').eq('slug', slug).single()
       setShop(res.data)
     }
     load()
@@ -35,22 +36,26 @@ export default function CommanderPage() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  var handleSubmit = async function(e: any) {
+  var goToPayment = function(e: any) {
     e.preventDefault()
     if (!shop || cart.items.length === 0) return
+    setStep('payment')
+  }
+
+  var handleSubmit = async function() {
+    if (!shop || !paymentMode) return
     setLoading(true)
 
-    var orderRes = await supabase
-      .from('orders')
-      .insert({
-        shop_id: shop.id,
-        customer_name: form.name,
-        customer_phone: form.phone,
-        customer_address: form.delivery === 'domicile' ? form.address : null,
-        delivery_mode: form.delivery,
-        total: cart.total
-      })
-      .select().single()
+    var orderRes = await supabase.from('orders').insert({
+      shop_id: shop.id,
+      customer_name: form.name,
+      customer_phone: form.phone,
+      customer_address: form.delivery === 'domicile' ? form.address : null,
+      delivery_mode: form.delivery,
+      total: cart.total,
+      payment_mode: paymentMode,
+      payment_status: paymentMode === 'especes' ? 'en_attente' : 'en_attente'
+    }).select().single()
 
     if (!orderRes.error && orderRes.data) {
       var orderItems = cart.items.map(function(item) {
@@ -64,12 +69,11 @@ export default function CommanderPage() {
       })
       await supabase.from('order_items').insert(orderItems)
 
-      // Decrementer le stock pour chaque produit commande
       for (var i = 0; i < cart.items.length; i++) {
         var item = cart.items[i]
         if (item.stock_quantity != null) {
           var newStock = Math.max(0, item.stock_quantity - item.quantity)
-          await supabase.from("products").update({ stock_quantity: newStock, is_active: newStock > 0 }).eq("id", item.id)
+          await supabase.from('products').update({ stock_quantity: newStock, is_active: newStock > 0 }).eq('id', item.id)
         }
       }
 
@@ -87,59 +91,173 @@ export default function CommanderPage() {
       })
 
       cart.clearCart()
+      setStep('confirmation')
     }
     setLoading(false)
   }
 
-  if (confirmation) {
+  var paymentModes = [
+    { id: 'wave', label: 'Wave', icon: '🌊', desc: 'Paiement mobile Wave', always: true },
+    { id: 'orange_money', label: 'Orange Money', icon: '🟠', desc: 'Paiement Orange Money', needsAddon: 'cinetpay' },
+    { id: 'mtn_momo', label: 'MTN MoMo', icon: '🟡', desc: 'Paiement MTN Mobile Money', needsAddon: 'cinetpay' },
+    { id: 'cb', label: 'Carte bancaire', icon: '💳', desc: 'Visa / Mastercard', needsAddon: 'stripe' },
+  ]
+
+  var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
+
+  var availableModes = paymentModes.filter(function(m) {
+    if (m.always) return true
+    if (m.needsAddon) return hasAddon(m.needsAddon)
+    return false
+  })
+
+  if (form.delivery === 'retrait') {
+    availableModes.push({ id: 'especes', label: 'Especes a la boutique', icon: '💵', desc: 'Payez en especes au retrait', always: true })
+  }
+
+  var getPaymentInstructions = function() {
+    if (paymentMode === 'wave') {
+      return { title: 'Paiement Wave', instructions: 'Envoyez ' + formatPrice(cart.total) + ' au numero Wave :', number: shop?.wave_number || shop?.phone, steps: ['Ouvrez Wave', 'Envoyez ' + formatPrice(cart.total) + ' au numero ci-dessus', 'Ajoutez en commentaire : ' + (confirmation?.orderNumber || '')] }
+    }
+    if (paymentMode === 'orange_money') {
+      return { title: 'Paiement Orange Money', instructions: 'Envoyez ' + formatPrice(cart.total) + ' au numero Orange Money :', number: shop?.orange_number || shop?.phone, steps: ['Tapez #144#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(cart.total) + ' au numero ci-dessus'] }
+    }
+    if (paymentMode === 'mtn_momo') {
+      return { title: 'Paiement MTN MoMo', insuctions: 'Envoyez ' + formatPrice(cart.total) + ' au numero MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(cart.total) + ' au numero ci-dessus'] }
+    }
+    if (paymentMode === 'especes') {
+      return { title: 'Paiement en especes', instructions: 'Payez ' + formatPrice(cart.total) + ' au retrait de votre commande.', number: null, steps: ['Rendez-vous a la boutique', 'Presentez le numero de commande', 'Payez en especes'] }
+    }
+    if (paymentMode === 'cb') {
+      return { title: 'Paiement par carte', instructions: 'Le paiement par carte sera disponible prochainement.', number: null, steps: [] }
+    }
+    return null
+  }
+
+  // ECRAN CONFIRMATION
+  if (step === 'confirmation' && confirmation) {
     var waText = encodeURIComponent(
-      '🛒 Nouvelle commande ' + confirmation.orderNumber + '\n' +
-      'Client : ' + confirmation.customerName + '\n' +
-      'Tel : ' + form.phone + '\n' +
-      'Produits : ' + confirmation.items + '\n' +
-      'Montant : ' + confirmation.total.toLocaleString() + ' FCFA\n' +
-      'Livraison : ' + (form.delivery === 'retrait' ? 'Retrait en boutique' : form.address)
+      'Nouvelle commande ' + confirmation.orderNumber + '\n'
+      + 'Client : ' + confirmation.customerName + '\n'
+      + 'Tel : ' + form.phone + '\n'
+      + 'Produits : ' + confirmation.items + '\n'
+      + 'Montant : ' + confirmation.total.toLocaleString() + ' FCFA\n'
+      + 'Paiement : ' + paymentMode + '\n'
+      + 'Livraison : ' + (form.delivery === 'retrait' ? 'Retrait en boutique' : form.address)
     )
     var waLink = 'https://wa.me/' + confirmation.shopPhone + '?text=' + waText
+    var payInfo = getPaymentInstructions()
 
     return (
-      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
-        <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg text-center">
-          <div className="text-5xl mb-4">✅</div>
-      <h2 className="font-nunito font-extrabold text-xl mb-2">Commande confirmée !</h2>
-          <p className="text-fs-gray mb-1">
-            Numéro : <strong className="text-fs-ink">{confirmation.orderNumber}</strong>
-          </p>
-          <p className="text-fs-gray mb-1 text-sm">{confirmation.items}</p>
-          <p className="font-nunito font-extrabold text-fs-orange mb-6">
-            {formatPrice(confirmation.total)}
-          </p>
-          <a href={waLink} target="_blank"
+      <div className="min-h-screen bg-fs-cream px-4 py-8">
+        <div className="bg-white rounded-2xl p-6 max-w-md mx-auto shadow-lg">
+          <div className="text-center mb-6">
+            <div className="text-5xl mb-4">✅</div>
+            <h2 className="font-nunito font-extrabold text-xl mb-2">Commande confirmee !</h2>
+            <p className="text-fs-gray">Numero : <strong className="text-fs-ink">{confirmation.orderNumber}</strong></p>
+            <p className="text-fs-gray text-sm">{confirmation.items}</p>
+            <p className="font-nunito font-extrabold text-fs-orange text-lg mt-2">{formatPrice(confirmation.total)}</p>
+          </div>
+
+          {payInfo && paymentMode !== 'especes' && paymentMode !== 'cb' && (
+            <div className="bg-fs-cream rounded-xl p-4 mb-4">
+              <p className="font-bold text-sm mb-2">{payInfo.title}</p>
+              <p className="text-xs text-fs-gray mb-3">{payInfo.instructions}</p>
+              {payInfo.number && (
+                <div className="bg-white rounded-lg p-3 text-center mb-3">
+                  <p className="font-nunito font-extrabold text-lg">{payInfo.number}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                {payInfo.steps.map(function(s, i) {
+                  return (
+                    <div key={i} className="flex items-start gap-2 text-xs text-fs-gray">
+                      <span className="w-5 h-5 rounded-full bg-fs-orange text-white flex items-center justify-center shrink-0 text-[10px] font-bold">{i + 1}</span>
+                      <span>{s}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {paymentMode === 'especes' && (
+            <div className="bg-fs-green-bg rounded-xl p-4 mb-4 text-center">
+              <p className="font-bold text-sm text-fs-green">Payez {formatPrice(confirmation.total)} au retrait</p>
+              <p className="text-xs text-fs-gray mt-1">Presentez le numero {confirmation.orderNumber} a la boutique</p>
+            </div>
+          )}
+
+          <a href={waLink} target="_blank" rel="noopener noreferrer"
              className="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl text-center hover:bg-[#1DA851] transition">
-            📲 Confirmer sur WhatsApp avec {confirmation.shopName}
+            Confirmer sur WhatsApp avec {confirmation.shopName}
           </a>
-          <a href={'/suivi?cmd=' + confirmation.orderNumber} target="_blank" className="block w-full bg-fs-ink text-white font-bold py-3 rounded-xl text-center mt-3">Suivre ma commande</a>
-          <Link href={'/boutique/' + slug} className="block mt-4 text-sm text-fs-orange font-semibold">
-            ← Retour à la boutique
+          <a href={'/suivi?cmd=' + confirmation.orderNumber} target="_blank"
+             className="block w-full bg-fs-ink text-white font-bold py-3 rounded-xl text-center mt-3">
+            Suivre ma commande
+          </a>
+          <Link href={'/boutique/' + slug} className="block mt-4 text-sm text-fs-orange font-semibold text-center">
+            Retour a la boutique
           </Link>
         </div>
       </div>
     )
   }
 
-  if (cart.items.length === 0) {
+  // ECRAN PAIEMENT
+  if (step === 'payment') {
     return (
-      <div className="min-h-screen bg-fs-cream flex flex-col items-centify-center px-4">
-        <p className="text-4xl mb-3">🛒</p>
-        <p className="text-fs-gray mb-4">Votre panier est vide</p>
-        <Link href={'/boutique/' + slug}
-              className="bg-fs-orange text-white font-bold px-6 py-3 rounded-xl">
-          Voir le catalogue
-        </Link>
+      <div className="min-h-screen bg-fs-cream">
+        <header className="bg-white border-b border-fs-border px-4 py-4 flex items-center gap-3">
+          <button onClick={function() { setStep('form') }} className="text-fs-gray text-lg">←</button>
+          <h1 className="font-nunito font-extrabold text-lg">Choisir le paiement</h1>
+        </header>
+
+        <div className="px-4 pt-4">
+          <div className="bg-fs-ink text-white rounded-xl p-3 flex items-center justify-between mb-4">
+            <span className="font-semibold text-sm">Total a payer</span>
+            <span className="font-nunito font-extrabold">{formatPrice(cart.total)}</span>
+          </div>
+
+          <div className="space-y-2">
+            {availableModes.map(function(mode) {
+              var isSelected = paymentMode === mode.id
+              return (
+                <button key={mode.id} type="button" onClick={function() { setPaymentMode(mode.id) }}
+                        className={'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition ' +
+                          (isSelected ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-ink border-fs-border')}>
+                  <span className="text-2xl">{mode.icon}</span>
+                  <div>
+                    <p className="text-sm font-bold">{mode.label}</p>
+                    <p className={'text-xs ' + (isSelected ? 'text-gray-300' : 'text-fs-gray')}>{mode.desc}</p>
+                  </div>
+                  {isSelected && <span className="ml-auto text-lg">✓</span>}
+                </button>
+              )
+            })}
+          </div>
+
+          <button onClick={handleSubmit} disabled={!paymentMode || loading}
+                  className="w-full bg-fs-orange text-white font-bold py-4 rounded-xl mt-6 hover:bg-fs-orange-deep transition disabled:opacity-50">
+            {loading ? 'Envoin cours...' : 'Valider ma commande — ' + formatPrice(cart.total)}
+          </button>
+        </div>
       </div>
     )
   }
 
+  // PANIER VIDE
+  if (cart.items.length === 0) {
+    return (
+      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
+        <p className="text-4xl mb-3">🛒</p>
+        <p className="text-fs-gray mb-4">Votre panier est vide</p>
+        <Link href={'/boutique/' + slug} className="bg-fs-orange text-white font-bold px-6 py-3 rounded-xl">Voir le catalogue</Link>
+      </div>
+    )
+  }
+
+  // ECRAN FORMULAIRE
   return (
     <div className="min-h-screen bg-fs-cream">
       <header className="bg-white border-b border-fs-border px-4 py-4 flex items-center gap-3">
@@ -150,7 +268,10 @@ export default function CommanderPage() {
       <div className="px-4 pt-4 space-y-2">
         {cart.items.map(function(item) {
           return (
-            <div key={item.id} className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3">
+            <div
+              key={item.id}
+              className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3"
+            >
               <div className="w-12 h-12 bg-fs-cream rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
                 {item.image_url ? (
                   <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
@@ -160,7 +281,9 @@ export default function CommanderPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{item.name}</p>
-                <p className="text-xs text-fs-gray">{formatPrice(item.price)} x {item.quantity}</p>
+                <p className="text-xs text-fs-gray">
+                  {formatPrice(item.price)} x {item.quantity}
+                </p>
               </div>
               <p className="font-nunito font-extrabold text-sm text-fs-orange shrink-0">
                 {formatPrice(item.price * item.quantity)}
@@ -174,19 +297,17 @@ export default function CommanderPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-4 py-5 space-y-4 max-w-md mx-auto">
+      <form onSubmit={goToPayment} className="px-4 py-5 space-y-4 max-w-md mx-auto">
         <div>
           <label className="block text-sm font-semibold mb-1">Votre nom</label>
           <input name="name" value={form.name} onChange={handleChange} required
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white
-                            focus:outline-none focus:ring-2 focus:ring-fs-orange"
-                 placeholder="Ex : Koné Aminata" />
+                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                 placeholder="Ex : Kone Aminata" />
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-1">Téléphone</label>
+          <label className="block text-sm font-semibold mb-1">Telephone</label>
           <input name="phone" type="tel" value={form.phone} onChange={handleChange} required
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white
-                            focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                  placeholder="07 XX XX XX XX" />
         </div>
         <div>
@@ -195,28 +316,26 @@ export default function CommanderPage() {
             <button type="button" onClick={function() { setForm({ ...form, delivery: 'retrait' }) }}
                     className={'flex-1 py-3 rounded-xl border text-sm font-semibold transition ' +
                       (form.delivery === 'retrait' ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-gray border-fs-border')}>
-              🏪 Retrait
+              Retrait
             </button>
             <button type="button" onClick={function() { setForm({ ...form, delivery: 'domicile' }) }}
                     className={'flex-1 py-3 rounded-xl border text-sm font-semibold transition ' +
                       (form.delivery === 'domicile' ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-gray border-fs-border')}>
-              🏠 Domicile
+              Domicile
             </button>
           </div>
         </div>
         {form.delivery === 'domicile' && (
           <div>
-            <label className="block text-sm font-semibold mb-1">Adresse (commune, quartier, repère)</label>
+            <label className="block text-sm font-semibold mb-1">Adresse (commune, quartier, repere)</label>
             <textarea name="address" value={form.address} onChange={handleChange} required rows={3}
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white
-                                 focus:outline-none focus:ring-2 focus:ring-fs-orange resize-none"
-                      placeholder="Ex : Cocody Angré, Star 8, près de la pharmacie" />
+                      className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange resize-none"
+                      placeholder="Ex : Cocody Angre, Star 8, pres de la pharmacie" />
           </div>
         )}
-        <button type="submit" disabled={loading}
-                className="w-full bg-fs-orange text-white font-bold py-4 rounded-xl
-                           hover:bg-fs-orange-deep transition disabled:opacity-50">
-          {loading ? 'Envoi en cours...' : 'Valider ma commande — ' + formatPrice(cart.total)}
+        <button type="submit"
+                className="w-full bg-fs-orange text-white font-bold py-4 rounded-xl hover:bg-fs-orange-deep transition">
+          Choisir le mode de paiement
         </button>
       </form>
     </div>

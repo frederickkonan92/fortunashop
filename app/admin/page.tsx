@@ -128,7 +128,19 @@ export default function AdminPage() {
                 <span className={'px-3 py-1 rounded-full text-xs font-bold ' + statusStyle(order.status)}>{statusLabel(order.status)}</span>
               </div>
               <p className="text-sm"><strong>{order.customer_name}</strong> · {order.customer_phone}</p>
-              <p className="text-xs text-fs-gray mt-1">{items}</p>              <p className="text-sm font-bold text-fs-orange mt-2">{formatPrice(order.total)}</p>
+              <p className="text-xs text-fs-gray mt-1">{items}</p>              <p className="text-sm font-bold text-fs-orange mt-2">{formatPrice(order.total)}</p> {order.payment_mode && (
+                <p className="text-xs text-fs-gray mt-1">
+                  Paiement : <strong>{order.payment_mode}</strong>
+                  {order.payment_status === 'en_attente' && <span className="ml-2 text-[#D97706]">· En attente</span>}
+                  {order.payment_status === 'confirme' && <span className="ml-2 text-fs-green">· Confirme</span>}
+                </p>
+              )}
+              {order.payment_status === 'en_attente' && order.status === 'nouvelle' && (
+                <button onClick={function() { supabase.from('orders').update({ payment_status: 'confirme' }).eq('id', order.id).then(function() { loadData() }) }}
+                        className="w-full bg-blue-500 text-white text-xs font-bold py-2.5 rounded-xl mt-2">
+                  Confirmer le paiement recu
+                </button>
+              )}
               <p className="text-xs text-fs-gray2 mt-1">{new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
               <div className="flex gap-2 mt-3 flex-wrap">
                 {next && (

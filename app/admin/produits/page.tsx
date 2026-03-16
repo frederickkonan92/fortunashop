@@ -37,6 +37,10 @@ export default function ProduitsPage() {
   }
 
   var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
+  var planLimits: any = { starter: 20, pro: 50, premium: 999999 }
+  var maxProducts = planLimits[shop?.plan || "starter"] || 20
+  var canAddProduct = products.length < maxProducts
+
   var handleChange = function(e: any) { setForm({ ...form, [e.target.name]: e.target.value }) }
 
   var handleImageChange = function(e: any) {
@@ -150,10 +154,24 @@ export default function ProduitsPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <h1 className="font-nunito font-black text-base">Mes produits</h1>
-            <p className="text-xs text-gray-500">{products.length} produit{products.length > 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-500">{products.length}/{maxProducts} produit{products.length > 1 ? 's' : ''}</p>
           </div>
-          <button onClick={function() { setShowForm(true) }}
-                  className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">
+          <button
+            onClick={function() {
+              if (canAddProduct) {
+                setShowForm(true)
+              } else {
+                alert(
+                  'Limite de ' +
+                    maxProducts +
+                    ' produits atteinte pour le plan ' +
+                    (shop?.plan || 'starter') +
+                    '. Passez au plan supérieur.'
+                )
+              }
+            }}
+            className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl"
+          >
             + Ajouter
           </button>
         </div>
@@ -285,8 +303,22 @@ export default function ProduitsPage() {
           <div className="text-center py-16">
             <p className="text-4xl mb-3">📦</p>
             <p className="text-fs-gray mb-4">Aucun produit pour le moment</p>
-            <button onClick={function() { setShowForm(true) }}
-                    className="bg-fs-orange text-white font-bold px-6 py-3 rounded-xl">
+            <button
+              onClick={function() {
+                if (canAddProduct) {
+                  setShowForm(true)
+                } else {
+                  alert(
+                    'Limite de ' +
+                      maxProducts +
+                      ' produits atteinte pour le plan ' +
+                      (shop?.plan || 'starter') +
+                      '. Passez au plan supérieur.'
+                  )
+                }
+              }}
+              className="bg-fs-orange text-white font-bold px-6 py-3 rounded-xl"
+            >
               Ajouter mon premier produit
             </button>
           </div>
