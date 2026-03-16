@@ -10,6 +10,7 @@ export default function AdminNav({ shopSlug }: { shopSlug?: string }) {
     { href: '/admin', label: 'Commandes' },
     { href: '/admin/produits', label: 'Produits' },
     { href: '/admin/dashboard', label: 'Dashboard' },
+    { href: '/admin/livreurs', label: 'Livreurs' },
   ]
 
   return (

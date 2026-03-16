@@ -33,13 +33,20 @@ export default function ProduitsPage() {
       var prodRes = await supabase.from('products').select('*')
         .eq('shop_id', shopRes.data.id).order('sort_order', { ascending: true })
       setProducts(prodRes.data || [])
+      var now = new Date()
+      var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      var editsRes = await supabase.from('catalog_edits').select('id').eq('shop_id', shopRes.data.id).gte('created_at', startOfMonth)
+      setMonthEdits(editsRes.data?.length || 0)
     }
   }
 
   var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
   var planLimits: any = { starter: 20, pro: 50, premium: 999999 }
+  var editLimits: any = { starter: 2, pro: 5, premium: 999999 }
+  var maxEdits = editLimits[shop?.plan || 'starter'] || 2
+  var [monthEdits, setMonthEdits] = useState(0)
   var maxProducts = planLimits[shop?.plan || "starter"] || 20
-  var canAddProduct = products.length < maxProducts
+  var canEdit = shop?.plan === 'premium' || monthEdits < maxEdits
 
   var handleChange = function(e: any) { setForm({ ...form, [e.target.name]: e.target.value }) }
 
@@ -109,8 +116,10 @@ export default function ProduitsPage() {
     }
     if (editing) {
       await supabase.from('products').update(productData).eq('id', editing.id)
+      await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'update' })
     } else {
       await supabase.from('products').insert(productData)
+      await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'create' })
     }
     resetForm()
     loadData()
@@ -154,19 +163,22 @@ export default function ProduitsPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <h1 className="font-nunito font-black text-base">Mes produits</h1>
-            <p className="text-xs text-gray-500">{products.length}/{maxProducts} produit{products.length > 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-500">
+              {products.length}/{maxProducts} produit{products.length > 1 ? 's' : ''} ·{' '}
+              {monthEdits}/{maxEdits} modif{monthEdits > 1 ? 's' : ''}
+            </p>
           </div>
           <button
             onClick={function() {
-              if (canAddProduct) {
+              if (canAddProduct && canEdit) {
                 setShowForm(true)
+              } else if (!canAddProduct) {
+                alert('Limite de ' + maxProducts + ' produits atteinte.')
               } else {
                 alert(
                   'Limite de ' +
-                    maxProducts +
-                    ' produits atteinte pour le plan ' +
-                    (shop?.plan || 'starter') +
-                    '. Passez au plan supérieur.'
+                    maxEdits +
+                    ' modifications ce mois atteinte. Passez au plan superieur.'
                 )
               }
             }}
@@ -305,13 +317,13 @@ export default function ProduitsPage() {
             <p className="text-fs-gray mb-4">Aucun produit pour le moment</p>
             <button
               onClick={function() {
-                if (canAddProduct) {
+                if (canEdit) {
                   setShowForm(true)
                 } else {
                   alert(
                     'Limite de ' +
-                      maxProducts +
-                      ' produits atteinte pour le plan ' +
+                      maxEdits +
+                      ' modifications par mois atteinte pour le plan ' +
                       (shop?.plan || 'starter') +
                       '. Passez au plan supérieur.'
                   )
