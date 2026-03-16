@@ -42,8 +42,8 @@ export default function ProduitsPage() {
 
   var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
   var planLimits: any = { starter: 20, pro: 50, premium: 999999 }
-  var editLimits: any = { starter: 2, pro: 5, premium: 999999 }
-  var maxEdits = editLimits[shop?.plan || 'starter'] || 2
+  var editLimits: any = { starter: 10, pro: 25, premium: 999999 }
+  var maxEdits = editLimits[shop?.plan || 'starter'] || 10
   var [monthEdits, setMonthEdits] = useState(0)
   var maxProducts = planLimits[shop?.plan || "starter"] || 20
   var canAddProduct = products.length < maxProducts
@@ -94,6 +94,9 @@ export default function ProduitsPage() {
   var handleSubmit = async function(e: any) {
     e.preventDefault()
     if (!shop) return
+    // Verifier la limite de modifications (stock exclu)
+    var isStockOnlyEdit = editing && form.name === editing.name && form.price === String(editing.price) && form.description === (editing.description || "") && !imageFile
+    if (!isStockOnlyEdit && !canEdit) { alert("Limite de " + maxEdits + " modifications ce mois atteinte. Passez au plan superieur."); setLoading(false); return }
     setLoading(true)
     var imageUrl = editing ? editing.image_url : null
     if (imageFile) {
@@ -117,7 +120,9 @@ export default function ProduitsPage() {
     }
     if (editing) {
       await supabase.from('products').update(productData).eq('id', editing.id)
-      await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'update' })
+      if (!isStockOnlyEdit) {
+        await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'update' })
+      }
     } else {
       await supabase.from('products').insert(productData)
       await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'create' })
