@@ -95,22 +95,35 @@ export default function CatalogueClient({ slug }: { slug: string }) {
           {products.map(function(product) {
             var qty = getItemQty(product.id)
             return (
-              <div key={product.id}
-                   className="bg-white border border-fs-border rounded-2xl overflow-hidden
-                              hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
-                <div className="aspect-square bg-fs-cream flex items-center justify-center">
-                  {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover"/>
-                  ) : (
-                    <span className="text-5xl">🛍️</span>
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="font-semibold text-[13px] leading-tight mb-1 line-clamp-2">{product.name}</p>
-                  <p className="font-nunito font-extrabold text-sm text-fs-orange mb-3">
-                    {formatPrice(product.price)}
-                  </p>
-                  {qty === 0 ? (
+              <div
+                key={product.id}
+                className="bg-white border border-fs-border rounded-2xl overflow-hidden
+                           hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+              >
+                <a
+                  href={'/boutique/' + shop.slug + '/produit/' + product.id}
+                  className="block"
+                >
+                  <div className="aspect-square bg-fs-cream flex items-center justify-center">
+                    {product.image_url ? (
+                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-5xl">🛍️</span>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="font-semibold text-[13px] leading-tight mb-1 line-clamp-2">
+                      {product.name}
+                    </p>
+                    {product.description && (
+                      <p className="text-xs text-fs-gray mb-1 line-clamp-2">
+                        {product.description}
+                      </p>
+                    )}
+                    <p className="font-nunito font-extrabold text-sm text-fs-orange mb-3">
+                      {formatPrice(product.price)}
+                    </p>
+                    {qty === 0 ? (
                     <button onClick={function() { handleAdd(product) }}
                             className="w-full bg-fs-ink text-white text-center text-xs font-bold py-2.5 rounded-xl
                                        hover:bg-fs-orange transition">
@@ -130,8 +143,9 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                         +
                       </button>
                     </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                </a>
               </div>
             )
           })}

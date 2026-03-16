@@ -11,7 +11,40 @@ export default function AdminPage() {
   var [shop, setShop] = useState<any>(null)
   var [livreurLinks, setLivreurLinks] = useState<any>({})
 
-  useEffect(function() { loadData() }, [])
+  var [lastCount, setLastCount] = useState(0)
+  var [notifPermission, setNotifPermission] = useState('default')
+
+  useEffect(function() {
+    loadData()
+    if (typeof Notification !== 'undefined') {
+      setNotifPermission(Notification.permission)
+    }
+    var interval = setInterval(function() {
+      loadData()
+    }, 30000)
+    return function() { clearInterval(interval) }
+  }, [])
+
+  useEffect(function() {
+    if (lastCount > 0 && orders.length > lastCount) {
+      try {
+        var audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==')
+        audio.play().catch(function() {})
+      } catch(e) {}
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('Nouvelle commande !', { body: 'Vous avez une nouvelle commande sur ' + (shop?.name || 'votre boutique'), icon: '/favicon.ico' })
+      }
+    }
+    setLastCount(orders.length)
+  }, [orders.length])
+
+  var requestNotifPermission = function() {
+    if (typeof Notification !== 'undefined') {
+      Notification.requestPermission().then(function(result) {
+        setNotifPermission(result)
+      })
+    }
+  }
 
   var loadData = async function() {
     var userRes = await supabase.auth.getUser()
@@ -85,7 +118,22 @@ export default function AdminPage() {
             <h1 className="font-nunito font-black text-base">{shop?.name || 'Mon espace'}</h1>
             <p className="text-xs text-gray-500">Admin</p>
           </div>
-          <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-white transition">Deconnexion</button>
+          <div className="flex items-center gap-2">
+            {notifPermission !== 'granted' && (
+              <button
+                onClick={requestNotifPermission}
+                className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg"
+              >
+                Activer les alertes
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="text-xs text-gray-400 hover:text-white transition"
+            >
+              Deconnexion
+            </button>
+          </div>
         </div>
       </header>
       <AdminNav shopSlug={shop?.slug} />

@@ -117,16 +117,16 @@ export default function CommanderPage() {
 
   var getPaymentInstructions = function() {
     if (paymentMode === 'wave') {
-      return { title: 'Paiement Wave', instructions: 'Envoyez ' + formatPrice(cart.total) + ' au numero Wave :', number: shop?.wave_number || shop?.phone, steps: ['Ouvrez Wave', 'Envoyez ' + formatPrice(cart.total) + ' au numero ci-dessus', 'Ajoutez en commentaire : ' + (confirmation?.orderNumber || '')] }
+      return { title: 'Paiement Wave', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero Wave :', number: shop?.wave_number || shop?.phone, steps: ['Ouvrez Wave', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus', 'Ajoutez en commentaire : ' + (confirmation?.orderNumber || '')] }
     }
     if (paymentMode === 'orange_money') {
-      return { title: 'Paiement Orange Money', instructions: 'Envoyez ' + formatPrice(cart.total) + ' au numero Orange Money :', number: shop?.orange_number || shop?.phone, steps: ['Tapez #144#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(cart.total) + ' au numero ci-dessus'] }
+      return { title: 'Paiement Orange Money', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero Orange Money :', number: shop?.orange_number || shop?.phone, steps: ['Tapez #144#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
     }
     if (paymentMode === 'mtn_momo') {
-      return { title: 'Paiement MTN MoMo', insuctions: 'Envoyez ' + formatPrice(cart.total) + ' au numero MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(cart.total) + ' au numero ci-dessus'] }
+      return { title: 'Paiement MTN MoMo', insuctions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
     }
     if (paymentMode === 'especes') {
-      return { title: 'Paiement en especes', instructions: 'Payez ' + formatPrice(cart.total) + ' au retrait de votre commande.', number: null, steps: ['Rendez-vous a la boutique', 'Presentez le numero de commande', 'Payez en especes'] }
+      return { title: 'Paiement en especes', instructions: 'Payez ' + formatPrice(confirmation?.total || 0) + ' au retrait de votre commande.', number: null, steps: ['Rendez-vous a la boutique', 'Presentez le numero de commande', 'Payez en especes'] }
     }
     if (paymentMode === 'cb') {
       return { title: 'Paiement par carte', instructions: 'Le paiement par carte sera disponible prochainement.', number: null, steps: [] }
