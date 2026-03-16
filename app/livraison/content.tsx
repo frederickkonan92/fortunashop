@@ -10,6 +10,7 @@ export default function LivraisonContent() {
 
   var [status, setStatus] = useState('loading')
   var [order, setOrder] = useState<any>(null)
+  var [shop, setShop] = useState<any>(null)
   var [confirming, setConfirming] = useState(false)
 
   useEffect(function() {
@@ -24,12 +25,12 @@ export default function LivraisonContent() {
     if (tokenRes.data.used) { setStatus('already_used'); return }
     var orderRes = await supabase
       .from('orders').select('*, order_items(*)').eq('id', tokenRes.data.order_id).single()
-    if (orderRes.data) {
-      setOrder(orderRes.data)
-      setStatus('ready')
-    } else {
-      setStatus('invalid')
-    }
+    if (!orderRes.data) { setStatus('invalid'); return }
+    setOrder(orderRes.data)
+    var shopRes = await supabase
+      .from('shops').select('*').eq('id', orderRes.data.shop_id).single()
+    setShop(shopRes.data)
+    setStatus('ready')
   }
 
   var confirmDelivery = async function() {
@@ -62,18 +63,28 @@ export default function LivraisonContent() {
     return (
       <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-5xl mb-4">✅</p>
-        <h1 className="font-nunito font-extrd text-xl mb-2">Deja confirmee</h1>
+        <h1 className="font-nunito font-extrabold text-xl mb-2">Deja confirmee</h1>
         <p className="text-fs-gray">Cette livraison a deja ete confirmee.</p>
       </div>
     )
   }
 
   if (status === 'confirmed') {
+    var clientMsg = 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' de ' + (shop?.name || 'la boutique') + ' a ete livree avec succes ! Merci pour votre achat.'
+    var clientWaLink = 'https://wa.me/' + order.customer_phone + '?text=' + encodeURIComponent(clientMsg)
+
     return (
-      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-5xl mb-4">🎉</p>
-        <h1 className="font-nunito font-extrabold text-xl mb-2">Livraison confirmee !</h1>
-        <p className="text-fs-gray">Merci. La commande {order.order_number} est marquee comme livree.</p>
+      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg text-center">
+          <p className="text-5xl mb-4">🎉</p>
+          <h1 className="font-nunito font-extrabold text-xl mb-2">Livraison confirmee !</h1>
+          <p className="text-fs-gray mb-6">La commande {order.order_number} est marquee comme livree.</p>
+          <a href={clientWaLink} target="_blank" rel="noopener noreferrer"
+             className="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl text-center hover:bg-[#1DA851] transition">
+            Notifier le client sur WhatsApp
+          </a>
+        <p className="text-xs text-fs-gray2 mt-3">Cliquez pour informer le client que sa commande est livree</p>
+        </div>
       </div>
     )
   }
@@ -86,7 +97,7 @@ export default function LivraisonContent() {
         <div className="text-center mb-6">
           <p className="text-5xl mb-3">🛵</p>
           <h1 className="font-nunito font-extrabold text-xl">Confirmer la livraison</h1>
-    </div>
+        </div>
         <div className="bg-fs-cream rounded-xl p-4 space-y-2 mb-6">
           <div className="flex justify-between text-sm">
             <span className="text-fs-gray">Commande</span>

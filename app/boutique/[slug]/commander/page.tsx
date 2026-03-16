@@ -118,6 +118,7 @@ export default function CommanderPage() {
              className="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl text-center hover:bg-[#1DA851] transition">
             📲 Confirmer sur WhatsApp avec {confirmation.shopName}
           </a>
+          <a href={'/suivi?cmd=' + confirmation.orderNumber} target="_blank" className="block w-full bg-fs-ink text-white font-bold py-3 rounded-xl text-center mt-3">Suivre ma commande</a>
           <Link href={'/boutique/' + slug} className="block mt-4 text-sm text-fs-orange font-semibold">
             ← Retour à la boutique
           </Link>

@@ -9,6 +9,7 @@ export default function AdminPage() {
   var [orders, setOrders] = useState<any[]>([])
   var [filter, setFilter] = useState('all')
   var [shop, setShop] = useState<any>(null)
+  var [livreurLinks, setLivreurLinks] = useState<any>({})
 
   useEffect(function() { loadData() }, [])
 
@@ -30,17 +31,32 @@ export default function AdminPage() {
     loadData()
   }
 
-  var sendToLivreur = function(order: any) {
+  var prepareLivreurLink = async function(order: any) {
     if (!shop?.delivery_phone) return
     var baseUrl = window.location.origin
-    var token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
     var confirmLink = ''
     if (shop?.addons?.includes('livreur_link')) {
+      var token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+      await supabase.from('delivery_tokens').insert({ order_id: order.id, token: token })
       confirmLink = '\n\nConfirmer livraison ici :\n' + baseUrl + '/livraison?token=' + token
-      supabase.from('delivery_tokens').insert({ order_id: order.id, token: token })
     }
     var message = 'Livraison ' + order.order_number + '\nClient : ' + order.customer_name + '\nTel : ' + order.customer_phone + '\nAdresse : ' + (order.customer_address || 'Retrait en boutique') + '\nMontant : ' + order.total.toLocaleString() + ' FCFA' + confirmLink
-    window.location.href = 'https://wa.me/' + shop.delivery_phone + '?text=' + encodeURIComponent(message)
+    var waLink = 'https://wa.me/' + shop.delivery_phone + '?text=' + encodeURIComponent(message)
+    setLivreurLinks(function(prev: any) { var updated = { ...prev }; updated[order.id] = waLink; return updated })
+  }
+
+  var getClientNotifLink = function(order: any, forStatus: string) {
+    if (!order.customer_phone) return null
+    var baseUrl = window.location.origin
+    var suiviLink = baseUrl + '/suivi?cmd=' + order.order_number
+    var messages: any = {
+      confirmee: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' chez ' + (shop?.name || 'la boutique') + ' est confirmee ! On prepare votre commande.\n\nSuivre ma commande :\n' + suiviLink,
+      en_livraison: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est en route ! Le livreur arrive bientot.\n\nSuivre ma commande :\n' + suiviLink,
+      livree: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' a ete livree ! Merci pour votre achat chez ' + (shop?.name || 'la boutique') + '.'
+    }
+    var msg = messages[forStatus]
+    if (!msg) return null
+    return 'https://wa.me/' + order.customer_phone + '?text=' + encodeURIComponent(msg)
   }
 
   var handleLogout = async function() {
@@ -103,6 +119,8 @@ export default function AdminPage() {
         {filtered.map(function(order) {
           var next = nextStatus[order.status]
           var items = (order.order_items || []).map(function(i: any) { return i.product_name + ' (' + i.quantity + ')' }).join(', ')
+          var waLink = livreurLinks[order.id]
+          var clientLink = getClientNotifLink(order, order.status)
           return (
             <div key={order.id} className="bg-white rounded-2xl border border-fs-border p-4">
               <div className="flex items-center justify-between mb-3">
@@ -110,8 +128,7 @@ export default function AdminPage() {
                 <span className={'px-3 py-1 rounded-full text-xs font-bold ' + statusStyle(order.status)}>{statusLabel(order.status)}</span>
               </div>
               <p className="text-sm"><strong>{order.customer_name}</strong> · {order.customer_phone}</p>
-              <p className="text-xs text-fs-gray mt-1">{items}</p>
-              <p className="text-sm font-bold text-fs-orange mt-2">{formatPrice(order.total)}</p>
+              <p className="text-xs text-fs-gray mt-1">{items}</p>              <p className="text-sm font-bold text-fs-orange mt-2">{formatPrice(order.total)}</p>
               <p className="text-xs text-fs-gray2 mt-1">{new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
               <div className="flex gap-2 mt-3 flex-wrap">
                 {next && (
@@ -120,13 +137,25 @@ export default function AdminPage() {
                     {'-> ' + statusLabel(next)}
                   </button>
                 )}
-                {(order.status === 'confirmee' || order.status === 'en_livraison') && shop?.delivery_phone && (
-                  <button onClick={function() { sendToLivreur(order) }}
+                {(order.status === 'confirmee' || order.status === 'en_livraison') && shop?.delivery_phone && !waLink && (
+                  <button onClick={function() { prepareLivreurLink(order) }}
                           className="flex-1 bg-[#25D366] text-white text-xs font-bold py-2.5 rounded-xl text-center">
-                    Envoyer au livreur
+                    Preparer lien livreur
                   </button>
                 )}
+                {waLink && (
+                  <a href={waLink} target="_blank" rel="noopener noreferrer"
+                     className="flex-1 bg-[#25D366] text-white text-xs font-bold py-2.5 rounded-xl text-center">
+                    Envoyer au livreur
+                  </a>
+                )}
               </div>
+              {clientLink && order.status !== 'nouvelle' && (
+                <a href={clientLink} target="_blank" rel="noopener noreferrer"
+                   className="block w-full bg-blue-500 text-white text-xs font-bold py-2.5 rounded-xl text-center mt-2">
+                  Notifier le client · {statusLabel(order.status)}
+                </a>
+              )}
             </div>
           )
         })}

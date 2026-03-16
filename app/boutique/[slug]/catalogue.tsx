@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import PageTracker from '@/components/tracker'
 import { useCart, CartBar } from '@/components/cart'
 import Link from 'next/link'
 
@@ -61,6 +62,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-fs-cream pb-20">
+      <PageTracker shopId={shop.id} page="catalogue" />
       <header className="sticky top-0 z-50 bg-white border-b border-fs-border
                           px-4 py-3 flex items-center gap-3 shadow-sm">
         <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-fs-orange to-fs-orange-deep
