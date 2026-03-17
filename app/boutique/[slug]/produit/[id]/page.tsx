@@ -58,7 +58,7 @@ export default function ProduitPage() {
     return (
       <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-5xl mb-4">🔍</p>
-        <h1 className="nt-nunito font-extrabold text-xl mb-2">Produit introuvable</h1>
+        <h1 className="font-nunito font-extrabold text-xl mb-2">Produit introuvable</h1>
         <Link href={'/boutique/' + slug} className="text-fs-orange font-semibold mt-4">Retour a la boutique</Link>
       </div>
     )
@@ -66,9 +66,14 @@ export default function ProduitPage() {
 
   var stockStatus = product.stock_quantity == null ? 'unlimited' : product.stock_quantity > 0 ? 'available' : 'out'
 
+  // cart.count = somme de toutes les quantités (ex: 10 montres + 1 bracelet = 11)
+  // cart.items.length = nombre de produits distincts (= 2) → c'était le bug
+  var totalArticles = cart.count
+
   return (
-    <div className="min-h-screen bg-fs-cream pb-24">
+    <div className="min-h-screen bg-fs-cream pb-32">
       {shop && <PageTracker shopId={shop.id} page="produit" productId={product.id} />}
+
       <header className="sticky top-0 z-50 bg-white border-b border-fs-border px-4 py-3 flex items-center gap-3">
         <Link href={'/boutique/' + slug} className="text-fs-gray text-lg">←</Link>
         <h1 className="font-nunito font-extrabold text-base truncate">{shop?.name}</h1>
@@ -78,7 +83,7 @@ export default function ProduitPage() {
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full h-72 object-cover" />
         ) : (
-          <div className="w-full h-72 bg-fs-cream flex items-center jusfy-center text-6xl">📦</div>
+          <div className="w-full h-72 bg-fs-cream flex items-center justify-center text-6xl">📦</div>
         )}
       </div>
 
@@ -99,16 +104,23 @@ export default function ProduitPage() {
           <p className="text-xs font-semibold text-red-500 mb-4">Rupture de stock</p>
         )}
 
-        <button onClick={addToCart} disabled={stockStatus === 'out'}
-                className={'w-full font-bold py-4 rounded-xl transition text-center ' +
-                  (added ? 'bg-fs-grn text-white' : stockStatus === 'out' ? 'bg-gray-200 text-gray-400' : 'bg-fs-orange text-white hover:bg-fs-orange-deep')}>
-          {added ? 'Ajoute au panier !' : stockStatus === 'out' ? 'Indisponible' : 'Ajouter au panier — ' + formatPrice(product.price)}
+        {/* Bouton Ajouter au panier */}
+        <button
+          onClick={addToCart}
+          disabled={stockStatus === 'out'}
+          className={'w-full font-bold py-4 rounded-xl transition text-center ' +
+            (added ? 'bg-fs-green text-white' : stockStatus === 'out' ? 'bg-gray-200 text-gray-400' : 'bg-fs-orange text-white hover:bg-fs-orange-deep')}>
+          {added ? '✓ Ajouté au panier !' : stockStatus === 'out' ? 'Indisponible' : 'Ajouter au panier — ' + formatPrice(product.price)}
         </button>
 
-        {cart.items.length > 0 && (
-          <Link href={'/boutique/' + slug + '/commander'}
-                className="block w-full bg-fs-ink text-white font-bold py-3.5 rounded-xl text-center mt-3">
-            Commander ({cart.items.length} article{cart.items.length > 1 ? 's' : ''}) — {formatPrice(cart.total)}
+        {/* Bouton Valider le panier — remplace "Commander" */}
+        {/* S'affiche seulement si le panier contient au moins 1 article */}
+        {totalArticles > 0 && (
+          <Link
+            href={'/boutique/' + slug + '/commander'}
+            className="block w-full bg-fs-ink text-white font-bold py-3.5 rounded-xl text-center mt-3">
+            {/* totalArticles = cart.count = somme des quantités, pas le nombre de lignes */}
+            🛒 Valider le panier · {totalArticles} article{totalArticles > 1 ? 's' : ''} · {formatPrice(cart.total)}
           </Link>
         )}
       </div>

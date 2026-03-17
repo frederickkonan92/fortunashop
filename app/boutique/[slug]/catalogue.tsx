@@ -61,12 +61,13 @@ export default function CatalogueClient({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-fs-cream pb-20">
+    // pb-32 : espace en bas pour que la CartBar ne cache pas les produits
+    <div className="min-h-screen bg-fs-cream pb-32">
       <PageTracker shopId={shop.id} page="catalogue" />
-      <header className="sticky top-0 z-50 bg-white border-b border-fs-border
-                          px-4 py-3 flex items-center gap-3 shadow-sm">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-fs-orange to-fs-orange-deep
-                        flex items-center justify-center text-white font-nunito font-black text-lg shrink-0">
+
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-white border-b border-fs-border px-4 py-3 flex items-center gap-3 shadow-sm">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-fs-orange to-fs-orange-deep flex items-center justify-center text-white font-nunito font-black text-lg shrink-0">
           {shop.name[0]}
         </div>
         <div className="min-w-0">
@@ -79,6 +80,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
         </div>
       </header>
 
+      {/* BANNIÈRE ACCUEIL */}
       <div className="bg-gradient-to-br from-fs-orange-pale to-fs-cream2 px-5 py-6 border-b border-fs-border">
         <h2 className="font-nunito font-extrabold text-lg mb-1">Bienvenue chez {shop.name} 👋</h2>
         <p className="text-sm text-fs-gray leading-relaxed">
@@ -86,6 +88,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
         </p>
       </div>
 
+      {/* GRILLE PRODUITS */}
       <main className="px-4 py-5">
         <p className="text-[11px] font-bold tracking-[1.5px] uppercase text-fs-gray mb-4">
           Nos créations · {products.length} produit{products.length > 1 ? 's' : ''}
@@ -95,15 +98,11 @@ export default function CatalogueClient({ slug }: { slug: string }) {
           {products.map(function(product) {
             var qty = getItemQty(product.id)
             return (
-              <div
-                key={product.id}
-                className="bg-white border border-fs-border rounded-2xl overflow-hidden
-                           hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
-              >
-                <a
-                  href={'/boutique/' + shop.slug + '/produit/' + product.id}
-                  className="block"
-                >
+              <div key={product.id}
+                className="bg-white border border-fs-border rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
+
+                {/* ZONE CLIQUABLE : image + infos uniquement */}
+                <a href={'/boutique/' + shop.slug + '/produit/' + product.id} className="block">
                   <div className="aspect-square bg-fs-cream flex items-center justify-center">
                     {product.image_url ? (
                       <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
@@ -111,41 +110,54 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                       <span className="text-5xl">🛍️</span>
                     )}
                   </div>
-                  <div className="p-3">
-                    <p className="font-semibold text-[13px] leading-tight mb-1 line-clamp-2">
-                      {product.name}
-                    </p>
+                  <div className="p-3 pb-0">
+                    <p className="font-semibold text-[13px] leading-tight mb-1 line-clamp-2">{product.name}</p>
                     {product.description && (
-                      <p className="text-xs text-fs-gray mb-1 line-clamp-2">
-                        {product.description}
-                      </p>
+                      <p className="text-xs text-fs-gray mb-1 line-clamp-2">{product.description}</p>
                     )}
-                    <p className="font-nunito font-extrabold text-sm text-fs-orange mb-3">
-                      {formatPrice(product.price)}
-                    </p>
-                    {qty === 0 ? (
-                    <button onClick={function() { handleAdd(product) }}
-                            className="w-full bg-fs-ink text-white text-center text-xs font-bold py-2.5 rounded-xl
-                                       hover:bg-fs-orange transition">
+                    <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(product.price)}</p>
+                  </div>
+                </a>
+
+                {/* ZONE BOUTONS : hors du <a> → pas de redirection au clic */}
+                <div className="p-3 pt-2">
+                  {qty === 0 ? (
+                    <button
+                      onClick={function() { handleAdd(product) }}
+                      className="w-full bg-fs-ink text-white text-center text-xs font-bold py-2.5 rounded-xl hover:bg-fs-orange transition">
                       Ajouter
                     </button>
                   ) : (
-                    <div className="flex items-center jfy-between bg-fs-cream rounded-xl px-2 py-1.5">
-                      <button onClick={function() { cart.updateQuantity(product.id, qty - 1) }}
-                              className="w-8 h-8 rounded-lg bg-white text-fs-ink font-bold text-sm
-                                         flex items-center justify-center">
-                        -
+                    <div className="flex items-center justify-between bg-fs-cream rounded-xl px-2 py-1.5">
+                      {/* Bouton - : réduit la quantité, supprime si 0 */}
+                      <button
+                        onClick={function(e) {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          cart.updateQuantity(product.id, qty - 1)
+                        }}
+                        className="w-8 h-8 rounded-lg bg-white text-fs-ink font-bold text-sm flex items-center justify-center shadow-sm">
+                        −
                       </button>
                       <span className="font-bold text-sm">{qty}</span>
-                      <button onClick={function() { cart.updateQuantity(product.id, product.stock_quantity != null ? Math.min(qty + 1, product.stock_quantity) : qty + 1) }}
-                              className="w-8 h-8 rounded-lg bg-fs-ink text-white font-bold text-sm
-                                         flex items-center justify-center">
+                      {/* Bouton + : augmente, respecte le stock max */}
+                      <button
+                        onClick={function(e) {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          cart.updateQuantity(
+                            product.id,
+                            product.stock_quantity != null
+                              ? Math.min(qty + 1, product.stock_quantity)
+                              : qty + 1
+                          )
+                        }}
+                        className="w-8 h-8 rounded-lg bg-fs-ink text-white font-bold text-sm flex items-center justify-center">
                         +
                       </button>
                     </div>
-                    )}
-                  </div>
-                </a>
+                  )}
+                </div>
               </div>
             )
           })}
@@ -159,12 +171,14 @@ export default function CatalogueClient({ slug }: { slug: string }) {
         )}
       </main>
 
+      {/* FOOTER */}
       <footer className="bg-fs-cream2 border-t border-fs-border py-5 text-center">
         <p className="text-sm text-fs-gray">
           Propulsé par <strong className="text-fs-orange">fortunashop</strong>
         </p>
       </footer>
 
+      {/* BARRE PANIER FIXE EN BAS — z-50 pour passer au-dessus du contenu */}
       <CartBar count={cart.count} total={cart.total} slug={slug} />
     </div>
   )
