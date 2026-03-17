@@ -82,8 +82,12 @@ export default function AdminPage() {
     if (!order.customer_phone) return null
     var baseUrl = window.location.origin
     var suiviLink = baseUrl + '/suivi?cmd=' + order.order_number
+    var isRetrait = order.delivery_mode === 'retrait'
     var messages: any = {
       confirmee: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' chez ' + (shop?.name || 'la boutique') + ' est confirmee ! On prepare votre commande.\n\nSuivre ma commande :\n' + suiviLink,
+      // Notification retrait : prête à retirer
+      prete: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est prete ! Vous pouvez venir la recuperer en boutique.\n\nSuivre ma commande :\n' + suiviLink,
+      // Notification domicile : en route
       en_livraison: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est en route ! Le livreur arrive bientot.\n\nSuivre ma commande :\n' + suiviLink,
       livree: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' a ete livree ! Merci pour votre achat chez ' + (shop?.name || 'la boutique') + '.'
     }
@@ -97,13 +101,24 @@ export default function AdminPage() {
     window.location.href = '/admin/login'
   }
 
-  var nextStatus: any = { nouvelle: 'confirmee', confirmee: 'en_livraison', en_livraison: 'livree' }
+  // Workflow différent selon le mode de livraison
+  // Retrait : nouvelle → confirmee → en_preparation → prete
+  // Domicile : nouvelle → confirmee → en_livraison → livree
+  var getNextStatus = function(order: any) {
+    var isRetrait = order.delivery_mode === 'retrait'
+    var map: any = isRetrait
+      ? { nouvelle: 'confirmee', confirmee: 'en_preparation', en_preparation: 'prete' }
+      : { nouvelle: 'confirmee', confirmee: 'en_livraison', en_livraison: 'livree' }
+    return map[order.status] || null
+  }
   var tabs = [
     { key: 'all', label: 'Toutes' },
     { key: 'nouvelle', label: 'Nouvelles' },
     { key: 'confirmee', label: 'Confirmees' },
+    { key: 'en_preparation', label: 'En préparation' },
+    { key: 'prete', label: 'Prêtes' },
     { key: 'en_livraison', label: 'En livraison' },
-    { key: 'livree', label: 'Livrees' },
+    { key: 'livree', label: 'Livrées' },
   ]
   var filtered = filter === 'all' ? orders : orders.filter(function(o) { return o.status === filter })
   var countByStatus = function(s: string) { return orders.filter(function(o) { return o.status === s }).length }
@@ -165,7 +180,7 @@ export default function AdminPage() {
       </div>
       <div className="px-4 pb-24 max-w-lg mx-auto space-y-3">
         {filtered.map(function(order) {
-          var next = nextStatus[order.status]
+         var next = getNextStatus(order)
           var items = (order.order_items || []).map(function(i: any) { return i.product_name + ' (' + i.quantity + ')' }).join(', ')
           var waLink = livreurLinks[order.id]
           var clientLink = getClientNotifLink(order, order.status)
@@ -183,37 +198,52 @@ export default function AdminPage() {
                   {order.payment_status === 'confirme' && <span className="ml-2 text-fs-green">· Confirme</span>}
                 </p>
               )}
-              {order.payment_status === 'en_attente' && order.status === 'nouvelle' && (
-                <button onClick={function() { supabase.from('orders').update({ payment_status: 'confirme' }).eq('id', order.id).then(function() { loadData() }) }}
-                        className="w-full bg-blue-500 text-white text-xs font-bold py-2.5 rounded-xl mt-2">
-                  Confirmer le paiement recu
-                </button>
-              )}
+             
               <p className="text-xs text-fs-gray2 mt-1">{new Date(order.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
               <div className="flex gap-2 mt-3 flex-wrap">
-                {next && (
-                  <button onClick={function() { updateStatus(order.id, next) }}
+                {/* Bouton statut suivant — label dynamique selon le workflow */}
+                {getNextStatus(order) && (
+                  <button onClick={function() {
+                    var updates: any = { status: getNextStatus(order) }
+                    // Si commande nouvelle → confirmée : on confirme aussi le paiement en même temps
+                    if (order.status === 'nouvelle') {
+                      updates.payment_status = 'confirme'
+                    }
+                    supabase.from('orders').update(updates).eq('id', order.id).then(function() { loadData() })
+                  }}
                           className="flex-1 bg-fs-ink text-white text-xs font-bold py-2.5 rounded-xl hover:bg-fs-orange transition">
-                    {'-> ' + statusLabel(next)}
+                    {/* Statut nouvelle : label explicite pour l'artisan */}
+                    {order.status === 'nouvelle'
+                      ? (order.payment_mode === 'especes' ? '✓ Confirmer la commande' : '✓ Paiement reçu · Confirmer')
+                      : order.delivery_mode === 'retrait' && order.status === 'en_preparation'
+                        ? '✓ Prête à retirer'
+                        : '→ ' + statusLabel(getNextStatus(order))}
                   </button>
                 )}
-                {(order.status === 'confirmee' || order.status === 'en_livraison') && shop?.delivery_phone && !waLink && (
+                
+                {/* Lien livreur : uniquement si livraison domicile, jamais pour retrait */}
+                {order.delivery_mode !== 'retrait' && (order.status === 'confirmee' || order.status === 'en_livraison') && shop?.delivery_phone && !waLink && (
                   <button onClick={function() { prepareLivreurLink(order) }}
                           className="flex-1 bg-[#25D366] text-white text-xs font-bold py-2.5 rounded-xl text-center">
-                    Preparer lien livreur
+                    Préparer lien livreur
                   </button>
                 )}
-                {waLink && (
+                {order.delivery_mode !== 'retrait' && waLink && (
                   <a href={waLink} target="_blank" rel="noopener noreferrer"
                      className="flex-1 bg-[#25D366] text-white text-xs font-bold py-2.5 rounded-xl text-center">
                     Envoyer au livreur
                   </a>
                 )}
               </div>
-              {clientLink && order.status !== 'nouvelle' && (
+              {/* Bouton notification client — affiché pour tous les statuts sauf "nouvelle" */}
+              {/* Pour retrait : confirmee, en_preparation, prete */}
+              {/* Pour domicile : confirmee, en_livraison, livree */}
+              {clientLink && order.status !== 'nouvelle' && order.status !== 'en_preparation' && (
                 <a href={clientLink} target="_blank" rel="noopener noreferrer"
                    className="block w-full bg-blue-500 text-white text-xs font-bold py-2.5 rounded-xl text-center mt-2">
-                  Notifier le client · {statusLabel(order.status)}
+                  {order.status === 'prete'
+                    ? '🏪 Notifier : commande prête à retirer'
+                    : 'Notifier le client · ' + statusLabel(order.status)}
                 </a>
               )}
             </div>

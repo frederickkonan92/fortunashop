@@ -11,8 +11,9 @@ export default function ProduitsPage() {
   var [showForm, setShowForm] = useState(false)
   var [editing, setEditing] = useState<any>(null)
   var [loading, setLoading] = useState(false)
-  var [imageFile, setImageFile] = useState<File | null>(null)
-  var [imagePreview, setImagePreview] = useState<string | null>(null)
+ // 3 slots photo : index 0 = photo principale, 1 = photo 2, 2 = photo 3
+ var [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null])
+ var [imagePreviews, setImagePreviews] = useState<(string | null)[]>([null, null, null])
   var [form, setForm] = useState({
     name: '',
     price: '',
@@ -51,45 +52,56 @@ export default function ProduitsPage() {
 
   var handleChange = function(e: any) { setForm({ ...form, [e.target.name]: e.target.value }) }
 
-  var handleImageChange = function(e: any) {
-    var file = e.target.files[0]
-    if (!file) return
-    setImageFile(file)
-    var reader = new FileReader()
-    reader.onload = function(ev: any) { setImagePreview(ev.target.result) }
-    reader.readAsDataURL(file)
+ // handleImageChange : gère le changement de photo pour un slot donné (0, 1 ou 2)
+ var handleImageChange = function(index: number, e: any) {
+  var file = e.target.files[0]
+  if (!file) return
+  var newFiles = [...imageFiles]
+  newFiles[index] = file
+  setImageFiles(newFiles)
+  var reader = new FileReader()
+  reader.onload = function(ev: any) {
+    var newPreviews = [...imagePreviews]
+    newPreviews[index] = ev.target.result as string
+    setImagePreviews(newPreviews)
   }
+  reader.readAsDataURL(file)
+}
 
-  var uploadImage = async function() {
-    if (!imageFile || !shop) return null
-    var fileName = shop.id + '/' + Date.now() + '-' + imageFile.name
-    var res = await supabase.storage.from('product-images').upload(fileName, imageFile)
-    if (res.error) return null
-    var urlRes = supabase.storage.from('product-images').getPublicUrl(fileName)
-    return urlRes.data.publicUrl
-  }
+// uploadImage : upload un fichier dans Supabase Storage et retourne son URL publique
+var uploadImage = async function(file: File) {
+  if (!shop) return null
+  var fileName = shop.id + '/' + Date.now() + '-' + file.name
+  var res = await supabase.storage.from('product-images').upload(fileName, file)
+  if (res.error) return null
+  var urlRes = supabase.storage.from('product-images').getPublicUrl(fileName)
+  return urlRes.data.publicUrl
+}
 
-  var resetForm = function() {
-    setForm({ name: '', price: '', description: '', stock_quantity: '', stock_alert: '3' })
-    setEditing(null)
-    setShowForm(false)
-    setImageFile(null)
-    setImagePreview(null)
-  }
+var resetForm = function() {
+  setForm({ name: '', price: '', description: '', stock_quantity: '', stock_alert: '3' })
+  setEditing(null)
+  setShowForm(false)
+  setImageFiles([null, null, null])
+  setImagePreviews([null, null, null])
+}
 
-  var startEdit = function(product: any) {
-    setForm({
-      name: product.name,
-      price: String(product.price),
-      description: product.description || '',
-      stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
-      stock_alert: String(product.stock_alert || 3),
-    })
-    setEditing(product)
-    setImagePreview(product.image_url || null)
-    setImageFile(null)
-    setShowForm(true)
-  }
+
+var startEdit = function(product: any) {
+  setForm({
+    name: product.name,
+    price: String(product.price),
+    description: product.description || '',
+    stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
+    stock_alert: String(product.stock_alert || 3),
+  })
+  setEditing(product)
+  // Précharge les 3 previews existantes depuis le produit
+  setImagePreviews([product.image_url || null, product.image_url_2 || null, product.image_url_3 || null])
+  setImageFiles([null, null, null])
+  setShowForm(true)
+}
+
 
   var handleSubmit = async function(e: any) {
     e.preventDefault()
@@ -98,17 +110,22 @@ export default function ProduitsPage() {
     var isStockOnlyEdit = editing && form.name === editing.name && form.price === String(editing.price) && form.description === (editing.description || "") && !imageFile
     if (!isStockOnlyEdit && !canEdit) { alert("Limite de " + maxEdits + " modifications ce mois atteinte. Passez au plan superieur."); setLoading(false); return }
     setLoading(true)
-    var imageUrl = editing ? editing.image_url : null
-    if (imageFile) {
-      var uploaded = await uploadImage()
-      if (uploaded) imageUrl = uploaded
-    }
+   // Upload chaque photo si un nouveau fichier a été sélectionné
+   var imageUrl = editing ? editing.image_url : null
+   var imageUrl2 = editing ? editing.image_url_2 : null
+   var imageUrl3 = editing ? editing.image_url_3 : null
+   if (imageFiles[0]) { var u0 = await uploadImage(imageFiles[0]); if (u0) imageUrl = u0 }
+   if (imageFiles[1]) { var u1 = await uploadImage(imageFiles[1]); if (u1) imageUrl2 = u1 }
+   if (imageFiles[2]) { var u2 = await uploadImage(imageFiles[2]); if (u2) imageUrl3 = u2 }
+    
     var stockQty = form.stock_quantity === '' ? null : parseInt(form.stock_quantity)
     var productData: any = {
       name: form.name,
       price: parseInt(form.price),
       description: form.description,
       image_url: imageUrl,
+      image_url_2: imageUrl2,
+      image_url_3: imageUrl3,
       shop_id: shop.id,
     }
     if (hasAddon('stock')) {
@@ -241,15 +258,26 @@ export default function ProduitsPage() {
                   <p className="text-[11px] text-fs-gray2">Laissez vide pour un stock illimite. Le produit se desactive automatiquement quand le stock atteint 0.</p>
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-semibold mb-1">Photo du produit</label>
-                <input type="file" accept="image/*" onChange={handleImageChange}
-                       className="w-full text-sm text-fs-gray file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-fs-orange-pale file:text-fs-orange hover:file:bg-fs-orange hover:file:text-white file:transition file:cursor-pointer" />
-                {imagePreview && (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-fs-border">
-                    <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
-                  </div>
-                )}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold">Photos du produit (max 3)</label>
+                {[0, 1, 2].map(function(index) {
+                  return (
+                    <div key={index}>
+                      <p className="text-xs text-fs-gray mb-1">
+                        {index === 0 ? 'Photo principale *' : 'Photo ' + (index + 1) + ' (optionnelle)'}
+                      </p>
+                      <input type="file" accept="image/*"
+                             onChange={function(e) { handleImageChange(index, e) }}
+                             className="w-full text-sm text-fs-gray file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-fs-orange-pale file:text-fs-orange hover:file:bg-fs-orange hover:file:text-white file:transition file:cursor-pointer" />
+                      {/* Aperçu de la photo si déjà uploadée ou sélectionnée */}
+                      {imagePreviews[index] && (
+                        <div className="mt-2 rounded-xl overflow-hidden border border-fs-border">
+                          <img src={imagePreviews[index]!} alt={'Photo ' + (index + 1)} className="w-full h-32 object-cover" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
               <div className="flex gap-2">
                 <button type="submit" disabled={loading}

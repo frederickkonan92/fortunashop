@@ -8,7 +8,6 @@ import { formatPrice } from '@/lib/utils'
 export default function SuiviContent() {
   var searchParams = useSearchParams()
   var cmd = searchParams.get('cmd')
-
   var [order, setOrder] = useState<any>(null)
   var [shop, setShop] = useState<any>(null)
   var [loading, setLoading] = useState(true)
@@ -52,15 +51,31 @@ export default function SuiviContent() {
     )
   }
 
-  var steps = [
-    { key: 'nouvelle', label: 'Commande recue', icon: '🛒', desc: 'Votre commande a ete enregistree' },
-    { key: 'confirmee', label: 'Confirmee', icon: '✅', desc: 'L artisan prepare votre commande' },
-    { key: 'en_livraison', label: 'En livraison', icon: '🛵', desc: 'Le livreur est en route' },
-    { key: 'livree', label: 'Livree', icon: '🎉', desc: 'Votre commande a ete livree' },
+  var isRetrait = order.delivery_mode === 'retrait'
+
+  // Workflow retrait : nouvelle → confirmee → en_preparation → prete
+  // Workflow domicile : nouvelle → confirmee → en_livraison → livree
+  var stepsRetrait = [
+    { key: 'nouvelle',       label: 'Commande reçue',     icon: '🛒', desc: 'Votre commande a été enregistrée' },
+    { key: 'confirmee',      label: 'Confirmée',           icon: '✅', desc: 'L\'artisan prépare votre commande' },
+    { key: 'en_preparation', label: 'En préparation',      icon: '📦', desc: 'Votre commande est en cours de préparation' },
+    { key: 'prete',          label: 'Prête à retirer',     icon: '🏪', desc: 'Votre commande vous attend en boutique !' },
   ]
 
-  var statusOrder: any = { nouvelle: 0, confirmee: 1, en_livraison: 2, livree: 3 }
-  var currentIndex = statusOrder[order.status] || 0
+  var stepsDomicile = [
+    { key: 'nouvelle',     label: 'Commande reçue', icon: '🛒', desc: 'Votre commande a été enregistrée' },
+    { key: 'confirmee',    label: 'Confirmée',       icon: '✅', desc: 'L\'artisan prépare votre commande' },
+    { key: 'en_livraison', label: 'En livraison',    icon: '🛵', desc: 'Le livreur est en route' },
+    { key: 'livree',       label: 'Livrée',          icon: '🎉', desc: 'Votre commande a été livrée' },
+  ]
+
+  var steps = isRetrait ? stepsRetrait : stepsDomicile
+
+  // statusOrder : index de chaque statut dans le workflow
+  var statusOrderRetrait: any  = { nouvelle: 0, confirmee: 1, en_preparation: 2, prete: 3 }
+  var statusOrderDomicile: any = { nouvelle: 0, confirmee: 1, en_livraison: 2, livree: 3 }
+  var statusOrder = isRetrait ? statusOrderRetrait : statusOrderDomicile
+  var currentIndex = statusOrder[order.status] ?? 0
 
   var items = (order.order_items || []).map(function(i: any) {
     return i.product_name + ' x' + i.quantity
@@ -75,14 +90,12 @@ export default function SuiviContent() {
       </header>
 
       <div className="px-4 py-6 max-w-md mx-auto">
-
         <div className="bg-white rounded-2xl border border-fs-border p-5 mb-6">
           <div className="space-y-6">
             {steps.map(function(step, index) {
               var isDone = index <= currentIndex
-            var isCurrent = index === currentIndex
+              var isCurrent = index === currentIndex
               var isLast = index === steps.length - 1
-
               return (
                 <div key={step.key} className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -115,19 +128,21 @@ export default function SuiviContent() {
           </div>
         </div>
 
+        {/* Détails commande */}
         <div className="bg-white rounded-2xl border border-fs-border p-4 space-y-3">
-          <p className="text-xs font-bold text-fs-gray uppercase tracking-wider">Details</p>
+          <p className="text-xs font-bold text-fs-gray uppercase tracking-wider">Détails</p>
           <div className="flex justify-between text-sm">
             <span className="text-fs-gray">Client</span>
             <span className="font-semibold">{order.customer_name}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-fs-gray">Produits</span>
-            <span className="font-semibold text-right">{items}</span>
+            <span className="font-semibold text-right max-w-[60%]">{items}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-fs-gray">Livraison</span>
-            <span className="font-semibold">{order.delivery_mode === 'domicile' ? 'Domicile' : 'Retrait'}</span>
+            {/* Affiche le mode de livraison lisiblement */}
+            <span className="font-semibold">{isRetrait ? '🏪 Retrait en boutique' : '🛵 Livraison domicile'}</span>
           </div>
           <div className="flex justify-between text-sm pt-2 border-t border-fs-border">
             <span className="text-fs-gray">Total</span>
@@ -136,7 +151,7 @@ export default function SuiviContent() {
         </div>
 
         <p className="text-center text-xs text-fs-gray2 mt-6">
-          Cette page se met a jour automatiquement toutes les 10 secondes
+          Cette page se met à jour automatiquement toutes les 10 secondes
         </p>
       </div>
     </div>

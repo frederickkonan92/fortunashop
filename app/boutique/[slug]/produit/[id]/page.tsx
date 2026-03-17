@@ -8,6 +8,32 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import PageTracker from '@/components/tracker'
 
+// GaleriePhotos : affiche la photo principale + miniatures cliquables
+function GaleriePhotos({ photos, productName }: { photos: string[], productName: string }) {
+  var [selected, setSelected] = useState(0)
+  return (
+    <div>
+      {/* Photo principale */}
+      <img src={photos[selected]} alt={productName} className="w-full h-72 object-cover" />
+      {/* Miniatures — affichées seulement s'il y a plus d'une photo */}
+      {photos.length > 1 && (
+        <div className="flex gap-2 p-3 bg-white">
+          {photos.map(function(url, i) {
+            return (
+              <button key={i} onClick={function() { setSelected(i) }}
+                      className={'rounded-lg overflow-hidden border-2 transition ' +
+                        (selected === i ? 'border-fs-orange' : 'border-transparent')}>
+                {/* Miniature 60x60 */}
+                <img src={url} alt={productName + ' ' + (i + 1)} className="w-16 h-16 object-cover" />
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ProduitPage() {
   var params = useParams()
   var slug = params.slug as string
@@ -79,12 +105,18 @@ export default function ProduitPage() {
         <h1 className="font-nunito font-extrabold text-base truncate">{shop?.name}</h1>
       </header>
 
-      <div className="bg-white">
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.name} className="w-full h-72 object-cover" />
-        ) : (
-          <div className="w-full h-72 bg-fs-cream flex items-center justify-center text-6xl">📦</div>
-        )}
+     {/* Galerie photos : affiche jusqu'à 3 photos avec miniatures cliquables */}
+     <div className="bg-white">
+        {(() => {
+          // Collecte toutes les photos non nulles dans un tableau
+          var photos = [product.image_url, product.image_url_2, product.image_url_3].filter(Boolean)
+          if (photos.length === 0) {
+            return <div className="w-full h-72 bg-fs-cream flex items-center justify-center text-6xl">📦</div>
+          }
+          return (
+            <GaleriePhotos photos={photos} productName={product.name} />
+          )
+        })()}
       </div>
 
       <div className="px-4 py-5 max-w-md mx-auto">

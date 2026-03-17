@@ -268,10 +268,8 @@ export default function CommanderPage() {
       <div className="px-4 pt-4 space-y-2">
         {cart.items.map(function(item) {
           return (
-            <div
-              key={item.id}
-              className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3"
-            >
+            <div key={item.id} className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3">
+              {/* Image du produit */}
               <div className="w-12 h-12 bg-fs-cream rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
                 {item.image_url ? (
                   <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
@@ -279,20 +277,53 @@ export default function CommanderPage() {
                   <span className="text-xl">🛍️</span>
                 )}
               </div>
+
+              {/* Nom + prix unitaire */}
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{item.name}</p>
-                <p className="text-xs text-fs-gray">
-                  {formatPrice(item.price)} x {item.quantity}
-                </p>
+                <p className="text-xs text-fs-gray">{formatPrice(item.price)} / unité</p>
               </div>
-              <p className="font-nunito font-extrabold text-sm text-fs-orange shrink-0">
+
+              {/* Contrôles quantité + suppression */}
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Bouton - : réduit la quantité. Si quantité = 1 → supprime l'article */}
+                <button
+                  onClick={function() { cart.updateQuantity(item.id, item.quantity - 1) }}
+                  className="w-7 h-7 rounded-lg bg-fs-cream text-fs-ink font-bold text-sm flex items-center justify-center">
+                  −
+                </button>
+                {/* Quantité actuelle */}
+                <span className="font-bold text-sm w-5 text-center">{item.quantity}</span>
+                {/* Bouton + : augmente la quantité, respecte le stock max */}
+                <button
+                  onClick={function() {
+                    cart.updateQuantity(
+                      item.id,
+                      item.stock_quantity != null ? Math.min(item.quantity + 1, item.stock_quantity) : item.quantity + 1
+                    )
+                  }}
+                  className="w-7 h-7 rounded-lg bg-fs-ink text-white font-bold text-sm flex items-center justify-center">
+                  +
+                </button>
+                {/* Bouton poubelle : supprime complètement l'article du panier */}
+                <button
+                  onClick={function() { cart.removeItem(item.id) }}
+                  className="w-7 h-7 rounded-lg bg-red-50 text-red-400 font-bold text-sm flex items-center justify-center ml-1">
+                  🗑
+                </button>
+              </div>
+
+              {/* Sous-total de la ligne */}
+              <p className="font-nunito font-extrabold text-sm text-fs-orange shrink-0 w-16 text-right">
                 {formatPrice(item.price * item.quantity)}
               </p>
             </div>
           )
         })}
+
+        {/* Total général */}
         <div className="bg-fs-ink text-white rounded-xl p-3 flex items-center justify-between">
-          <span className="font-semibold text-sm">Total</span>
+          <span className="font-semibold text-sm">Total · {cart.count} article{cart.count > 1 ? 's' : ''}</span>
           <span className="font-nunito font-extrabold">{formatPrice(cart.total)}</span>
         </div>
       </div>
