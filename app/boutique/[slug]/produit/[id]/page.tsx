@@ -58,9 +58,12 @@ export default function ProduitPage() {
 
   var addToCart = function() {
     if (!product) return
-    var maxQty = product.stock_quantity != null ? product.stock_quantity : 999
+    // Stock disponible en ligne = stock total - tampon physique
+    var stockOnline = product.stock_quantity != null
+      ? Math.max(0, product.stock_quantity - (product.stock_buffer || 0))
+      : 999
     var currentQty = cart.items.find(function(i) { return i.id === product.id })?.quantity || 0
-    if (currentQty >= maxQty) return
+    if (currentQty >= stockOnline) return
     cart.addItem({
       id: product.id,
       name: product.name,

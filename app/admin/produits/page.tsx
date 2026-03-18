@@ -14,13 +14,14 @@ export default function ProduitsPage() {
  // 3 slots photo : index 0 = photo principale, 1 = photo 2, 2 = photo 3
  var [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null])
  var [imagePreviews, setImagePreviews] = useState<(string | null)[]>([null, null, null])
-  var [form, setForm] = useState({
-    name: '',
-    price: '',
-    description: '',
-    stock_quantity: '',
-    stock_alert: '3',
-  })
+ var [form, setForm] = useState({
+  name: '',
+  price: '',
+  description: '',
+  stock_quantity: '',
+  stock_alert: '3',
+  stock_buffer: '0',
+})
 
   useEffect(function() { loadData() }, [])
 
@@ -79,7 +80,7 @@ var uploadImage = async function(file: File) {
 }
 
 var resetForm = function() {
-  setForm({ name: '', price: '', description: '', stock_quantity: '', stock_alert: '3' })
+  setForm({ name: '', price: '', description: '', stock_quantity: '', stock_alert: '3', stock_buffer: '0' })
   setEditing(null)
   setShowForm(false)
   setImageFiles([null, null, null])
@@ -94,6 +95,7 @@ var startEdit = function(product: any) {
     description: product.description || '',
     stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
     stock_alert: String(product.stock_alert || 3),
+    stock_buffer: String(product.stock_buffer || 0),
   })
   setEditing(product)
   // Précharge les 3 previews existantes depuis le produit
@@ -129,9 +131,13 @@ var startEdit = function(product: any) {
       shop_id: shop.id,
     }
     if (hasAddon('stock')) {
+      var bufferQty = parseInt(form.stock_buffer) || 0
+      // Stock disponible en ligne = stock total - tampon physique
+      var stockOnline = stockQty != null ? Math.max(0, stockQty - bufferQty) : null
       productData.stock_quantity = stockQty
       productData.stock_alert = parseInt(form.stock_alert) || 3
-      if (stockQty !== null && stockQty <= 0) {
+      productData.stock_buffer = bufferQty
+      if (stockQty !== null && stockOnline !== null && stockOnline <= 0) {
         productData.is_active = false
       }
     }
@@ -251,9 +257,26 @@ var startEdit = function(product: any) {
                     <div>
                       <label className="block text-xs font-semibold mb-1">Seuil alerte</label>
                       <input name="stock_alert" type="number" value={form.stock_alert} onChange={handleChange}
-                             className="w-full rder border-fs-border rounded-xl px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                             className="w-full border border-fs-border rounded-xl px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange"
                              placeholder="3" />
                     </div>
+                  </div>
+                  {/* Stock tampon : unités réservées pour la boutique physique */}
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">
+                      Stock tampon boutique physique
+                    </label>
+                    <input name="stock_buffer" type="number" value={form.stock_buffer} onChange={handleChange}
+                           className="w-full border border-fs-border rounded-xl px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                           placeholder="0" />
+                    {/* Calcul temps réel du stock disponible en ligne */}
+                    <p className="text-[11px] text-fs-gray2 mt-1">
+                      Stock en ligne = {
+                        form.stock_quantity && parseInt(form.stock_quantity) > 0
+                          ? Math.max(0, parseInt(form.stock_quantity) - (parseInt(form.stock_buffer) || 0)) + ' unités disponibles'
+                          : 'renseignez le stock total'
+                      }
+                    </p>
                   </div>
                   <p className="text-[11px] text-fs-gray2">Laissez vide pour un stock illimite. Le produit se desactive automatiquement quand le stock atteint 0.</p>
                 </div>

@@ -141,17 +141,13 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                       </button>
                       <span className="font-bold text-sm">{qty}</span>
                       {/* Bouton + : augmente, respecte le stock max */}
-                      <button
-                        onClick={function(e) {
-                          e.stopPropagation()
-                          e.preventDefault()
-                          cart.updateQuantity(
-                            product.id,
-                            product.stock_quantity != null
-                              ? Math.min(qty + 1, product.stock_quantity)
-                              : qty + 1
-                          )
-                        }}
+                      <button onClick={function() {
+                        // Stock disponible en ligne = stock total - tampon physique
+                        var stockOnline = product.stock_quantity != null
+                          ? Math.max(0, product.stock_quantity - (product.stock_buffer || 0))
+                          : 999
+                        cart.updateQuantity(product.id, Math.min(qty + 1, stockOnline))
+                      }}
                         className="w-8 h-8 rounded-lg bg-fs-ink text-white font-bold text-sm flex items-center justify-center">
                         +
                       </button>
