@@ -96,13 +96,44 @@ export default function VentesPage() {
     }
 
     // Réinitialise le formulaire
-    setCart([])
-    setPaymentMode('especes')
-    setShowForm(false)
-    loadData()
-    setLoading(false)
-    alert('✅ Vente enregistrée ! Stock mis à jour.')
+  // Vérifie les alertes stock après vente physique
+// Vérifie les alertes stock après vente physique
+var alertMessages: string[] = []
+for (var j = 0; j < cart.length; j++) {
+  var soldItem = cart[j]
+  var prodRes = await supabase.from('products').select('*').eq('id', soldItem.product.id).single()
+  if (prodRes.data) {
+    var prod = prodRes.data
+    var stockOnline = prod.stock_quantity != null
+      ? Math.max(0, prod.stock_quantity - (prod.stock_buffer || 0))
+      : null
+    if (stockOnline != null && stockOnline === 0) {
+      alertMessages.push('🔴 ' + prod.name + ' : RUPTURE DE STOCK en ligne')
+    } else if (stockOnline != null && stockOnline <= (prod.stock_alert || 3)) {
+      alertMessages.push('🟠 ' + prod.name + ' : ' + stockOnline + ' unité(s) restante(s) en ligne')
+    }
   }
+}
+
+setCart([])
+setPaymentMode('especes')
+setShowForm(false)
+loadData()
+setLoading(false)
+
+// Construit le lien WhatsApp AVANT alert() pour éviter le blocage Safari
+var waAlertUrl = ''
+if (alertMessages.length > 0 && shop?.phone) {
+  var alertText = '⚠️ Alerte stock fortunashop\n\n' + alertMessages.join('\n') + '\n\nPensez à réapprovisionner votre stock sur fortunashop.fr/admin/produits'
+  waAlertUrl = 'https://wa.me/' + shop.phone + '?text=' + encodeURIComponent(alertText)
+}
+
+alert('✅ Vente enregistrée ! Stock mis à jour.')
+
+// Ouvre WhatsApp APRÈS alert() — évite le blocage popup Safari
+if (waAlertUrl) {
+  window.open(waAlertUrl, '_blank')
+}   }
 
   var paymentModes = [
     { id: 'especes', label: 'Espèces', icon: '💵' },
@@ -159,8 +190,15 @@ export default function VentesPage() {
                       </button>
                       <span className="font-bold text-sm w-4 text-center">{qty}</span>
                       <button
-                        onClick={function() { updateCart(product, qty + 1) }}
-                        className="w-7 h-7 rounded-lg bg-fs-ink text-white font-bold text-sm flex items-center justify-center">
+                        onClick={function() {
+                          // Limite = stock total (physique + en ligne)
+                          var maxStock = product.stock_quantity != null ? product.stock_quantity : 999
+                          if (qty < maxStock) updateCart(product, qty + 1)
+                        }}
+                        className={'w-7 h-7 rounded-lg font-bold text-sm flex items-center justify-center transition ' +
+                          (product.stock_quantity != null && qty >= product.stock_quantity
+                            ? 'bg-gray-200 text-gray-400'
+                            : 'bg-fs-ink text-white')}>
                         +
                       </button>
                     </div>

@@ -73,7 +73,25 @@ export default function CommanderPage() {
         var item = cart.items[i]
         if (item.stock_quantity != null) {
           var newStock = Math.max(0, item.stock_quantity - item.quantity)
-          await supabase.from('products').update({ stock_quantity: newStock, is_active: newStock > 0 }).eq('id', item.id)
+          await supabase.from('products').update({
+            stock_quantity: newStock,
+            is_active: newStock > 0
+          }).eq('id', item.id)
+
+          // Récupère les infos complètes du produit pour vérifier le seuil
+          var prodCheck = await supabase.from('products').select('*').eq('id', item.id).single()
+          if (prodCheck.data && shop?.phone) {
+            var p = prodCheck.data
+            var onlineStock = Math.max(0, p.stock_quantity - (p.stock_buffer || 0))
+            // Envoie alerte WhatsApp si stock bas ou rupture
+            if (onlineStock <= (p.stock_alert || 3)) {
+              var msg = onlineStock === 0
+                ? '⚠️ RUPTURE DE STOCK fortunashop\n\n' + p.name + ' est épuisé en ligne.\n\nReapprovisionnez votre stock.'
+                : '⚠️ Stock bas fortunashop\n\n' + p.name + ' : ' + onlineStock + ' unités restantes.\n\nPensez à réapprovisionner.'
+              var waAlert = 'https://wa.me/' + shop.phone + '?text=' + encodeURIComponent(msg)
+              window.open(waAlert, '_blank')
+            }
+          }
         }
       }
 

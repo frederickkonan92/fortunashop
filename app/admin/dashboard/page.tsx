@@ -12,7 +12,7 @@ export default function DashboardPage() {
   var [period, setPeriod] = useState('month')
   var [tab, setTab] = useState('ventes')
   var [loading, setLoading] = useState(true)
-
+  var [physicalSales, setPhysicalSales] = useState<any[]>([])
   useEffect(function() { loadData() }, [])
 
   var loadData = async function() {
@@ -26,6 +26,9 @@ export default function DashboardPage() {
       setOrders(ordersRes.data || [])
       var viewsRes = await supabase.from('page_views').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setPageViews(viewsRes.data || [])
+      // Charge les ventes physiques pour les inclure dans le dashboard
+      var physicalRes = await supabase.from('physical_sales').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
+      setPhysicalSales(physicalRes.data || [])
     }
     setLoading(false)
   }
@@ -65,7 +68,13 @@ export default function DashboardPage() {
 
   var filteredOrders = orders.filter(function(o) { return new Date(o.created_at) >= filterDate })
   var deliveredOrders = filteredOrders.filter(function(o) { return o.status === 'livree' })
-  var ca = deliveredOrders.reduce(function(sum, o) { return sum + o.total }, 0)
+ // CA ventes en ligne (commandes livrées)
+ var caOnline = deliveredOrders.reduce(function(sum, o) { return sum + o.total }, 0)
+ // CA ventes physiques sur la période
+ var filteredPhysical = physicalSales.filter(function(s) { return new Date(s.created_at) >= filterDate })
+ var caPhysical = filteredPhysical.reduce(function(sum, s) { return sum + s.total }, 0)
+ // CA total = en ligne + physique
+ var ca = caOnline + caPhysical
   var nbCommandes = filteredOrders.length
   var panierMoyen = deliveredOrders.length > 0 ? Math.round(ca / deliveredOrders.length) : 0
 
@@ -83,15 +92,28 @@ export default function DashboardPage() {
   var referrerIcons: any = { direct: '🔗', whatsapp: '💬', instagram: '📸', facebook: '👤', twitter: '🐦', autre: '🌐' }
 
   var productSales: any = {}
+  // Ventes en ligne
   filteredOrders.forEach(function(order) {
     if (order.order_items) {
       order.order_items.forEach(function(item: any) {
-        if (!productSales[item.product_name]) productSales[item.product_name] = { name: item.product_name, qty: 0, revenue: 0 }
-        productSales[item.product_name].qty += item.quantity
+        if (!productSales[item.product_name]) {
+          productSales[item.product_name] = { name: item.product_name, qtyOnline: 0, qtyPhysical: 0, revenue: 0 }
+        }
+        productSales[item.product_name].qtyOnline += item.quantity
         productSales[item.product_name].revenue += item.product_price * item.quantity
       })
     }
   })
+  // Ventes physiques — ajoutées si addon stock activé
+  if (hasAddon('stock')) {
+    filteredPhysical.forEach(function(sale: any) {
+      if (!productSales[sale.product_name]) {
+        productSales[sale.product_name] = { name: sale.product_name, qtyOnline: 0, qtyPhysical: 0, revenue: 0 }
+      }
+      productSales[sale.product_name].qtyPhysical += sale.quantity
+      productSales[sale.product_name].revenue += sale.total
+    })
+  }
   var topProducts = Object.values(productSales).sort(function(a: any, b: any) { return b.revenue - a.revenue }).slice(0, 5)
 
   var last30 = Array.from({ length: 30 }, function(_, i) { var d = new Date(); d.setDate(d.getDate() - (29 - i)); return d })
@@ -161,15 +183,37 @@ export default function DashboardPage() {
 
         {tab === 'ventes' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white border border-fs-border rounded-2xl p-4">
-                <p className="text-xs text-fs-gray mb-1">Chiffre d affaires</p>
+           <div className="grid grid-cols-2 gap-3">
+              {/* CA total avec distinction en ligne / physique */}
+              <div className="bg-white border border-fs-border rounded-2xl p-4 col-span-2">
+                <p className="text-xs text-fs-gray mb-1">Chiffre d'affaires total</p>
                 <p className="font-nunito font-extrabold text-xl text-fs-orange">{formatPrice(ca)}</p>
+                <div className="flex gap-3 mt-2">
+                  {/* CA en ligne */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-fs-orange" />
+                    <span className="text-xs text-fs-gray">En ligne : {formatPrice(caOnline)}</span>
+                  </div>
+                  {/* CA physique — affiché uniquement si l'artisan a l'addon stock */}
+                  {hasAddon('stock') && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-fs-ink" />
+                      <span className="text-xs text-fs-gray">Physique : {formatPrice(caPhysical)}</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="bg-white border border-fs-border rounded-2xl p-4">
-                <p className="text-xs text-fs-gray mb-1">Commandes</p>
+                <p className="text-xs text-fs-gray mb-1">Commandes en ligne</p>
                 <p className="font-nunito font-extrabold text-xl">{nbCommandes}</p>
               </div>
+              {/* Ventes physiques — uniquement si addon stock */}
+              {hasAddon('stock') && (
+                <div className="bg-white border border-fs-border rounded-2xl p-4">
+                  <p className="text-xs text-fs-gray mb-1">Ventes physiques</p>
+                  <p className="font-nunito font-extrabold text-xl">{filteredPhysical.length}</p>
+                </div>
+              )}
               <div className="bg-white border border-fs-border rounded-2xl p-4">
                 <p className="text-xs text-fs-gray mb-1">Panier moyen</p>
                 <p className="font-nunito font-extrabold text-xl">{formatPrice(panierMoyen)}</p>
@@ -201,16 +245,33 @@ export default function DashboardPage() {
               <p className="text-xs font-bold text-fs-gray mb-3">Top produits</p>
               {topProducts.length === 0 && <p className="text-sm text-fs-gray2 text-center py-4">Aucune vente sur cette periode</p>}
               {topProducts.map(function(p: any, i: number) {
+                var totalQty = p.qtyOnline + p.qtyPhysical
                 return (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-fs-cream last:border-0">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-fs-orange-pale text-fs-orange text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                      <div>
-                        <p className="text-sm font-semibold">{p.name}</p>
-                        <p className="text-xs text-fs-gray2">{p.qty} vendu{p.qty > 1 ? 's' : ''}</p>
+                  <div key={i} className="py-2 border-b border-fs-cream last:border-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-fs-orange-pale text-fs-orange text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                        <div>
+                          <p className="text-sm font-semibold">{p.name}</p>
+                          <p className="text-xs text-fs-gray2">{totalQty} au total</p>
+                        </div>
+                        <span className="text-xs text-fs-gray2">· {totalQty} au total</span>
                       </div>
+                      <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(p.revenue)}</p>
                     </div>
-                    <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(p.revenue)}</p>
+                    {/* Distinction vente en ligne vs physique */}
+                    <div className="flex gap-3 ml-9">
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-fs-orange" />
+                        <span className="text-xs text-fs-gray">En ligne : {p.qtyOnline}</span>
+                      </div>
+                      {hasAddon('stock') && (
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-fs-ink" />
+                          <span className="text-xs text-fs-gray">Physique : {p.qtyPhysical}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               })}
