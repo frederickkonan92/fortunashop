@@ -107,7 +107,7 @@ var startEdit = function(product: any) {
     e.preventDefault()
     if (!shop) return
     // Verifier la limite de modifications (stock exclu)
-    var isStockOnlyEdit = editing && form.name === editing.name && form.price === String(editing.price) && form.description === (editing.description || "") && !imageFile
+    var isStockOnlyEdit = editing && form.name === editing.name && form.price === String(editing.price) && form.description === (editing.description || "") && !imageFiles[0] && !imageFiles[1] && !imageFiles[2]
     if (!isStockOnlyEdit && !canEdit) { alert("Limite de " + maxEdits + " modifications ce mois atteinte. Passez au plan superieur."); setLoading(false); return }
     setLoading(true)
    // Upload chaque photo si un nouveau fichier a été sélectionné
