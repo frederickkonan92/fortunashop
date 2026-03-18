@@ -159,7 +159,8 @@ export default function DashboardPage() {
       </header>
       <AdminNav shopSlug={shop?.slug} />
 
-      <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
+
+<div className="px-4 py-4 max-w-lg mx-auto space-y-4">
         <div className="flex gap-2">
           <button onClick={function() { setTab('ventes') }}
                   className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'ventes' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>

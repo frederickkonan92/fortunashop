@@ -11,10 +11,10 @@ export default function VentesPage() {
   var [sales, setSales] = useState<any[]>([])
   var [loading, setLoading] = useState(false)
   var [showForm, setShowForm] = useState(false)
-
-  // Panier de la vente physique : liste de { product, quantity }
   var [cart, setCart] = useState<any[]>([])
   var [paymentMode, setPaymentMode] = useState('especes')
+  // State pour les alertes stock — déclenche le popup
+  var [stockAlerts, setStockAlerts] = useState<{name: string, stock: number, status: 'low' | 'out'}[]>([])
 
   useEffect(function() { loadData() }, [])
 
@@ -25,14 +25,11 @@ export default function VentesPage() {
     var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
     setShop(shopRes.data)
     if (shopRes.data) {
-      // Charge les produits actifs pour la saisie vente
       var prodRes = await supabase.from('products').select('*')
         .eq('shop_id', shopRes.data.id)
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       setProducts(prodRes.data || [])
-
-      // Charge l'historique des ventes physiques
       var salesRes = await supabase.from('physical_sales').select('*')
         .eq('shop_id', shopRes.data.id)
         .order('created_at', { ascending: false })
@@ -41,10 +38,8 @@ export default function VentesPage() {
     }
   }
 
-  // Ajoute ou retire un produit du panier vente physique
   var updateCart = function(product: any, qty: number) {
     if (qty <= 0) {
-      // Supprime le produit du panier si qty = 0
       setCart(cart.filter(function(i) { return i.product.id !== product.id }))
       return
     }
@@ -64,16 +59,18 @@ export default function VentesPage() {
     return item ? item.quantity : 0
   }
 
-  // Total du panier vente physique
   var total = cart.reduce(function(sum, i) { return sum + (i.product.price * i.quantity) }, 0)
 
   var handleSubmit = async function() {
     if (!shop || cart.length === 0) return
     setLoading(true)
 
-    // Insère chaque ligne du panier dans physical_sales
-    for (var i = 0; i < cart.length; i++) {
-      var item = cart[i]
+    // Sauvegarde le panier avant de le vider
+    var cartSnapshot = [...cart]
+
+    // Insère chaque ligne dans physical_sales + déduit le stock
+    for (var i = 0; i < cartSnapshot.length; i++) {
+      var item = cartSnapshot[i]
       await supabase.from('physical_sales').insert({
         shop_id: shop.id,
         product_id: item.product.id,
@@ -83,57 +80,48 @@ export default function VentesPage() {
         payment_mode: paymentMode,
         total: item.product.price * item.quantity
       })
-
-      // Déduit le stock si le produit en a un
       if (item.product.stock_quantity != null) {
         var newStock = Math.max(0, item.product.stock_quantity - item.quantity)
         await supabase.from('products').update({
           stock_quantity: newStock,
-          // Désactive le produit si stock = 0
           is_active: newStock > 0
         }).eq('id', item.product.id)
       }
     }
 
+    // Vérifie les alertes stock après mise à jour
+    var newAlerts: {name: string, stock: number, status: 'low' | 'out'}[] = []
+    for (var j = 0; j < cartSnapshot.length; j++) {
+      var soldItem = cartSnapshot[j]
+      var prodRes = await supabase.from('products').select('*').eq('id', soldItem.product.id).single()
+      if (prodRes.data) {
+        var prod = prodRes.data
+        // Stock disponible en ligne après la vente
+        var stockOnline = prod.stock_quantity != null
+          ? Math.max(0, prod.stock_quantity - (prod.stock_buffer || 0))
+          : null
+        if (stockOnline === 0) {
+          newAlerts.push({ name: prod.name, stock: 0, status: 'out' })
+        } else if (stockOnline != null && stockOnline <= (prod.stock_alert || 3)) {
+          newAlerts.push({ name: prod.name, stock: stockOnline, status: 'low' })
+        }
+      }
+    }
+
     // Réinitialise le formulaire
-  // Vérifie les alertes stock après vente physique
-// Vérifie les alertes stock après vente physique
-var alertMessages: string[] = []
-for (var j = 0; j < cart.length; j++) {
-  var soldItem = cart[j]
-  var prodRes = await supabase.from('products').select('*').eq('id', soldItem.product.id).single()
-  if (prodRes.data) {
-    var prod = prodRes.data
-    var stockOnline = prod.stock_quantity != null
-      ? Math.max(0, prod.stock_quantity - (prod.stock_buffer || 0))
-      : null
-    if (stockOnline != null && stockOnline === 0) {
-      alertMessages.push('🔴 ' + prod.name + ' : RUPTURE DE STOCK en ligne')
-    } else if (stockOnline != null && stockOnline <= (prod.stock_alert || 3)) {
-      alertMessages.push('🟠 ' + prod.name + ' : ' + stockOnline + ' unité(s) restante(s) en ligne')
+    setCart([])
+    setPaymentMode('especes')
+    setShowForm(false)
+    setLoading(false)
+    loadData()
+
+    // Affiche le popup si alertes détectées
+    if (newAlerts.length > 0) {
+      setStockAlerts(newAlerts)
+    } else {
+      alert('✅ Vente enregistrée ! Stock mis à jour.')
     }
   }
-}
-
-setCart([])
-setPaymentMode('especes')
-setShowForm(false)
-loadData()
-setLoading(false)
-
-// Construit le lien WhatsApp AVANT alert() pour éviter le blocage Safari
-var waAlertUrl = ''
-if (alertMessages.length > 0 && shop?.phone) {
-  var alertText = '⚠️ Alerte stock fortunashop\n\n' + alertMessages.join('\n') + '\n\nPensez à réapprovisionner votre stock sur fortunashop.fr/admin/produits'
-  waAlertUrl = 'https://wa.me/' + shop.phone + '?text=' + encodeURIComponent(alertText)
-}
-
-alert('✅ Vente enregistrée ! Stock mis à jour.')
-
-// Ouvre WhatsApp APRÈS alert() — évite le blocage popup Safari
-if (waAlertUrl) {
-  window.open(waAlertUrl, '_blank')
-}   }
 
   var paymentModes = [
     { id: 'especes', label: 'Espèces', icon: '💵' },
@@ -160,17 +148,52 @@ if (waAlertUrl) {
 
       <AdminNav shopSlug={shop?.slug} />
 
-      <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
+      {/* POPUP ALERTE STOCK */}
+      {stockAlerts.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <div className="text-center mb-4">
+              <p className="text-4xl mb-2">⚠️</p>
+              <h3 className="font-nunito font-extrabold text-lg">Alerte stock</h3>
+              <p className="text-xs text-fs-gray mt-1">Vente enregistrée avec succès</p>
+            </div>
+            <div className="space-y-2 mb-5">
+              {stockAlerts.map(function(al, i) {
+                return (
+                  <div key={i} className={'rounded-xl p-3 ' + (al.status === 'out' ? 'bg-red-50' : 'bg-[#FEF3C7]')}>
+                    <p className={'text-sm font-bold ' + (al.status === 'out' ? 'text-red-500' : 'text-[#D97706]')}>
+                      {al.status === 'out' ? '🔴 Rupture de stock' : '🟠 Stock bas'}
+                    </p>
+                    <p className="text-sm font-semibold mt-0.5">{al.name}</p>
+                    <p className="text-xs text-fs-gray mt-0.5">
+                      {al.status === 'out'
+                        ? 'Ce produit est épuisé en ligne'
+                        : al.stock + ' unité(s) restante(s) en ligne'}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex gap-2">
+              <a href="/admin/produits"
+                 className="flex-1 bg-fs-orange text-white font-bold py-3 rounded-xl text-center text-sm">
+                Réapprovisionner
+              </a>
+              <button
+                onClick={function() { setStockAlerts([]) }}
+                className="px-4 py-3 rounded-xl border border-fs-border text-fs-gray font-semibold text-sm">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-        {/* FORMULAIRE NOUVELLE VENTE */}
+      <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
         {showForm && (
           <div className="bg-white rounded-2xl border border-fs-border p-5">
             <h2 className="font-nunito font-extrabold text-base mb-4">Enregistrer une vente</h2>
-
-            {/* SÉLECTION PRODUITS */}
-            <p className="text-xs font-bold text-fs-gray uppercase tracking-wider mb-3">
-              Produits vendus
-            </p>
+            <p className="text-xs font-bold text-fs-gray uppercase tracking-wider mb-3">Produits vendus</p>
             <div className="space-y-2 mb-4">
               {products.map(function(product) {
                 var qty = getQty(product.id)
@@ -181,7 +204,6 @@ if (waAlertUrl) {
                       <p className="font-semibold text-sm truncate">{product.name}</p>
                       <p className="text-xs text-fs-gray">{formatPrice(product.price)}</p>
                     </div>
-                    {/* Contrôles quantité */}
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={function() { updateCart(product, qty - 1) }}
@@ -191,7 +213,6 @@ if (waAlertUrl) {
                       <span className="font-bold text-sm w-4 text-center">{qty}</span>
                       <button
                         onClick={function() {
-                          // Limite = stock total (physique + en ligne)
                           var maxStock = product.stock_quantity != null ? product.stock_quantity : 999
                           if (qty < maxStock) updateCart(product, qty + 1)
                         }}
@@ -202,7 +223,6 @@ if (waAlertUrl) {
                         +
                       </button>
                     </div>
-                    {/* Sous-total ligne */}
                     {qty > 0 && (
                       <p className="font-nunito font-extrabold text-xs text-fs-orange ml-3 w-20 text-right shrink-0">
                         {formatPrice(product.price * qty)}
@@ -212,19 +232,13 @@ if (waAlertUrl) {
                 )
               })}
             </div>
-
-            {/* TOTAL */}
             {cart.length > 0 && (
               <div className="bg-fs-ink text-white rounded-xl p-3 flex items-center justify-between mb-4">
                 <span className="font-semibold text-sm">Total</span>
                 <span className="font-nunito font-extrabold">{formatPrice(total)}</span>
               </div>
             )}
-
-            {/* MODE PAIEMENT */}
-            <p className="text-xs font-bold text-fs-gray uppercase tracking-wider mb-3">
-              Mode de paiement
-            </p>
+            <p className="text-xs font-bold text-fs-gray uppercase tracking-wider mb-3">Mode de paiement</p>
             <div className="grid grid-cols-2 gap-2 mb-4">
               {paymentModes.map(function(mode) {
                 return (
@@ -234,14 +248,11 @@ if (waAlertUrl) {
                             (paymentMode === mode.id ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-ink border-fs-border')}>
                     <span>{mode.icon}</span>
                     <span>{mode.label}</span>
-                    {/* Coche si sélectionné */}
                     {paymentMode === mode.id && <span className="ml-auto">✓</span>}
                   </button>
                 )
               })}
             </div>
-
-            {/* BOUTON VALIDER */}
             <button
               onClick={handleSubmit}
               disabled={cart.length === 0 || loading}
@@ -251,7 +262,6 @@ if (waAlertUrl) {
           </div>
         )}
 
-        {/* HISTORIQUE VENTES PHYSIQUES */}
         <div>
           <p className="text-xs font-bold text-fs-gray uppercase tracking-wider mb-3">
             Historique des ventes physiques
@@ -270,7 +280,6 @@ if (waAlertUrl) {
                     <div>
                       <p className="font-semibold text-sm">{sale.product_name}</p>
                       <p className="text-xs text-fs-gray">
-                        {/* Icône selon mode paiement */}
                         {sale.payment_mode === 'especes' ? '💵' :
                          sale.payment_mode === 'wave' ? '🌊' :
                          sale.payment_mode === 'orange_money' ? '🟠' : '🟡'}
