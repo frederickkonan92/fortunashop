@@ -13,6 +13,7 @@ export default function DashboardPage() {
   var [tab, setTab] = useState('ventes')
   var [loading, setLoading] = useState(true)
   var [physicalSales, setPhysicalSales] = useState<any[]>([])
+
   useEffect(function() { loadData() }, [])
 
   var loadData = async function() {
@@ -26,7 +27,6 @@ export default function DashboardPage() {
       setOrders(ordersRes.data || [])
       var viewsRes = await supabase.from('page_views').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setPageViews(viewsRes.data || [])
-      // Charge les ventes physiques pour les inclure dans le dashboard
       var physicalRes = await supabase.from('physical_sales').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setPhysicalSales(physicalRes.data || [])
     }
@@ -34,6 +34,8 @@ export default function DashboardPage() {
   }
 
   var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
+  var isPro = function() { return shop?.plan === 'pro' || shop?.plan === 'premium' }
+  var isPremium = function() { return shop?.plan === 'premium' }
 
   if (loading) {
     return (
@@ -52,47 +54,84 @@ export default function DashboardPage() {
         <AdminNav shopSlug={shop?.slug} />
         <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
           <p className="text-5xl mb-4">📊</p>
-          <h2 className="font-nunito fonextrabold text-lg mb-2">Pack Pilotage</h2>
-          <p className="text-fs-gray mb-6 text-sm">CA en temps reel, top produits, analytics. Disponible en add-on.</p>
+          <h2 className="font-nunito font-extrabold text-lg mb-2">Pack Pilotage</h2>
+          <p className="text-fs-gray mb-6 text-sm">CA en temps réel, top produits, analytics. Disponible en add-on.</p>
           <p className="font-nunito font-extrabold text-fs-orange text-lg">15 000 FCFA /mois</p>
         </div>
       </div>
     )
   }
 
+  // ── PÉRIODE ──────────────────────────────────────────
   var now = new Date()
   var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   var startOfWeek = new Date(now)
   startOfWeek.setDate(now.getDate() - 7)
   var filterDate = period === 'month' ? startOfMonth : startOfWeek
 
+  // ── COMMANDES ────────────────────────────────────────
   var filteredOrders = orders.filter(function(o) { return new Date(o.created_at) >= filterDate })
   var deliveredOrders = filteredOrders.filter(function(o) { return o.status === 'livree' })
- // CA ventes en ligne (commandes livrées)
- var caOnline = deliveredOrders.reduce(function(sum, o) { return sum + o.total }, 0)
- // CA ventes physiques sur la période
- var filteredPhysical = physicalSales.filter(function(s) { return new Date(s.created_at) >= filterDate })
- var caPhysical = filteredPhysical.reduce(function(sum, s) { return sum + s.total }, 0)
- // CA total = en ligne + physique
- var ca = caOnline + caPhysical
+  var cancelledOrders = filteredOrders.filter(function(o) { return o.status === 'annulee' })
   var nbCommandes = filteredOrders.length
-  var panierMoyen = deliveredOrders.length > 0 ? Math.round(ca / deliveredOrders.length) : 0
 
+  // ── CA ───────────────────────────────────────────────
+  var caOnline = deliveredOrders.reduce(function(sum, o) { return sum + o.total }, 0)
+  var filteredPhysical = physicalSales.filter(function(s) { return new Date(s.created_at) >= filterDate })
+  var caPhysical = filteredPhysical.reduce(function(sum, s) { return sum + s.total }, 0)
+  var ca = caOnline + caPhysical
+  var panierMoyen = deliveredOrders.length > 0 ? Math.round(caOnline / deliveredOrders.length) : 0
+  var tauxLivraison = nbCommandes > 0 ? Math.round((deliveredOrders.length / nbCommandes) * 100) : 0
+
+  // ── CA PAR MODE DE PAIEMENT ──────────────────────────
+  var paymentModes = ['wave', 'orange_money', 'mtn_momo', 'especes', 'cb']
+  var paymentLabels: any = { wave: 'Wave', orange_money: 'Orange Money', mtn_momo: 'MTN MoMo', especes: 'Espèces', cb: 'Carte' }
+  var paymentIcons: any = { wave: '🌊', orange_money: '🟠', mtn_momo: '🟡', especes: '💵', cb: '💳' }
+  var paymentColors: any = { wave: '#3B82F6', orange_money: '#F97316', mtn_momo: '#EAB308', especes: '#10B981', cb: '#8B5CF6' }
+  var caByPayment: any = {}
+  paymentModes.forEach(function(m) { caByPayment[m] = 0 })
+  deliveredOrders.forEach(function(o) {
+    if (o.payment_mode && caByPayment[o.payment_mode] !== undefined) {
+      caByPayment[o.payment_mode] += o.total
+    }
+  })
+  var maxPaymentCA = Math.max.apply(null, Object.values(caByPayment).map(Number).concat([1]))
+
+  // ── ANALYTICS PRO ────────────────────────────────────
   var filteredViews = pageViews.filter(function(v) { return new Date(v.created_at) >= filterDate })
   var totalVisites = filteredViews.length
   var tauxConversion = totalVisites > 0 ? ((nbCommandes / totalVisites) * 100).toFixed(1) : '0'
 
+  // Meilleure heure de commande
+  var hourCounts: any = {}
+  filteredOrders.forEach(function(o) {
+    var h = new Date(o.created_at).getHours()
+    hourCounts[h] = (hourCounts[h] || 0) + 1
+  })
+  var bestHour = Object.entries(hourCounts).sort(function(a: any, b: any) { return b[1] - a[1] })[0]
+  var bestHourLabel = bestHour ? bestHour[0] + 'h-' + (parseInt(bestHour[0]) + 1) + 'h' : '--'
+
+  // Meilleur jour de commande
+  var dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+  var dayCounts: any = {}
+  filteredOrders.forEach(function(o) {
+    var d = dayNames[new Date(o.created_at).getDay()]
+    dayCounts[d] = (dayCounts[d] || 0) + 1
+  })
+  var bestDay = Object.entries(dayCounts).sort(function(a: any, b: any) { return b[1] - a[1] })[0]
+  var bestDayLabel = bestDay ? bestDay[0] : '--'
+
+  // Sources de trafic
   var referrerCounts: any = {}
   filteredViews.forEach(function(v) {
     var r = v.referrer || 'direct'
     referrerCounts[r] = (referrerCounts[r] || 0) + 1
   })
   var referrerList = Object.entries(referrerCounts).sort(function(a: any, b: any) { return b[1] - a[1] })
-
   var referrerIcons: any = { direct: '🔗', whatsapp: '💬', instagram: '📸', facebook: '👤', twitter: '🐦', autre: '🌐' }
 
+  // ── TOP PRODUITS ─────────────────────────────────────
   var productSales: any = {}
-  // Ventes en ligne
   filteredOrders.forEach(function(order) {
     if (order.order_items) {
       order.order_items.forEach(function(item: any) {
@@ -104,7 +143,6 @@ export default function DashboardPage() {
       })
     }
   })
-  // Ventes physiques — ajoutées si addon stock activé
   if (hasAddon('stock')) {
     filteredPhysical.forEach(function(sale: any) {
       if (!productSales[sale.product_name]) {
@@ -116,27 +154,44 @@ export default function DashboardPage() {
   }
   var topProducts = Object.values(productSales).sort(function(a: any, b: any) { return b.revenue - a.revenue }).slice(0, 5)
 
+  // ── GRAPHIQUE CA 30 JOURS ────────────────────────────
   var last30 = Array.from({ length: 30 }, function(_, i) { var d = new Date(); d.setDate(d.getDate() - (29 - i)); return d })
   var dailyCA = last30.map(function(date) {
     var dayStr = date.toDateString()
     var dayOrders = orders.filter(function(o) { return new Date(o.created_at).toDateString() === dayStr && o.status === 'livree' })
-    return { date: date, ca: dayOrders.reduce(function(sum, o) { return sum + o.total }, 0), label: date.getDate() + '/' + (date.getMonth() + 1) }
+    return { ca: dayOrders.reduce(function(sum, o) { return sum + o.total }, 0), label: date.getDate() + '/' + (date.getMonth() + 1) }
   })
   var maxCA = Math.max.apply(null, dailyCA.map(function(d) { return d.ca }).concat([1]))
 
   var dailyVisits = last30.map(function(date) {
     var dayStr = date.toDateString()
     var count = pageViews.filter(function(v) { return new Date(v.created_at).toDateString() === dayStr }).length
-    return { date: date, count: count, label: date.getDate() + '/' + (date.getMonth() + 1) }
+    return { count, label: date.getDate() + '/' + (date.getMonth() + 1) }
   })
   var maxVisits = Math.max.apply(null, dailyVisits.map(function(d) { return d.count }).concat([1]))
 
+  // ── PRÉVISION CA (Premium — 3 mois min) ──────────────
+  var caMonths: number[] = []
+  for (var m = 2; m >= 0; m--) {
+    var mStart = new Date(now.getFullYear(), now.getMonth() - m, 1)
+    var mEnd = new Date(now.getFullYear(), now.getMonth() - m + 1, 0)
+    var mCA = orders
+      .filter(function(o) { return o.status === 'livree' && new Date(o.created_at) >= mStart && new Date(o.created_at) <= mEnd })
+      .reduce(function(sum, o) { return sum + o.total }, 0)
+    caMonths.push(mCA)
+  }
+  var hasEnoughData = caMonths.filter(function(c) { return c > 0 }).length >= 3
+  var previsionCA = hasEnoughData
+    ? Math.round(caMonths[2] + ((caMonths[2] - caMonths[0]) / 2))
+    : null
+
+  // ── EXPORT CSV ───────────────────────────────────────
   var exportCSV = function() {
-    var headers = 'Numero,Date,Client,Telephone,Produits,Total,Statut,Livraison\n'
+    var headers = 'Numero,Date,Client,Telephone,Produits,Total,Statut,Livraison,Paiement\n'
     var rows = filteredOrders.map(function(o) {
       var items = (o.order_items || []).map(function(i: any) { return i.product_name }).join(' + ')
       var date = new Date(o.created_at).toLocaleDateString('fr-FR')
-      return [o.order_number, date, o.customer_name, o.customer_phone, items, o.total, o.status, o.delivery_mode].join(',')
+      return [o.order_number, date, o.customer_name, o.customer_phone, items, o.total, o.status, o.delivery_mode, o.payment_mode].join(',')
     }).join('\n')
     var blob = new Blob([headers + rows], { type: 'text/csv' })
     var url = URL.createObjectURL(blob)
@@ -152,24 +207,34 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <h1 className="font-nunito font-black text-base">Dashboard</h1>
-            <p className="text-xs text-gray-500">{shop?.name}</p>
+            <p className="text-xs text-gray-500">{shop?.name} · Plan {shop?.plan}</p>
           </div>
           <button onClick={exportCSV} className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">Export CSV</button>
         </div>
       </header>
+
       <AdminNav shopSlug={shop?.slug} />
 
+      <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
 
-<div className="px-4 py-4 max-w-lg mx-auto space-y-4">
+        {/* ONGLETS + PÉRIODE */}
         <div className="flex gap-2">
           <button onClick={function() { setTab('ventes') }}
                   className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'ventes' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
             Ventes
           </button>
-          <button onClick={function() { setTab('analytics') }}
-                  className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'analytics' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
-            Analytics
-          </button>
+          {isPro() && (
+            <button onClick={function() { setTab('analytics') }}
+                    className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'analytics' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
+              Analytics
+            </button>
+          )}
+          {isPremium() && (
+            <button onClick={function() { setTab('prevision') }}
+                    className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'prevision' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
+              Prévision
+            </button>
+          )}
           <div className="ml-auto flex gap-2">
             <button onClick={function() { setPeriod('week') }}
                     className={'px-3 py-2 rounded-full text-[11px] font-bold transition ' + (period === 'week' ? 'bg-fs-orange text-white' : 'bg-white text-fs-gray2 border border-fs-border')}>
@@ -182,48 +247,133 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ═══════════════════════════════════════════════
+            ONGLET VENTES — STARTER + PRO + PREMIUM
+        ═══════════════════════════════════════════════ */}
         {tab === 'ventes' && (
           <div className="space-y-4">
-           <div className="grid grid-cols-2 gap-3">
-              {/* CA total avec distinction en ligne / physique */}
-              <div className="bg-white border border-fs-border rounded-2xl p-4 col-span-2">
-                <p className="text-xs text-fs-gray mb-1">Chiffre d'affaires total</p>
-                <p className="font-nunito font-extrabold text-xl text-fs-orange">{formatPrice(ca)}</p>
-                <div className="flex gap-3 mt-2">
-                  {/* CA en ligne */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-fs-orange" />
-                    <span className="text-xs text-fs-gray">En ligne : {formatPrice(caOnline)}</span>
+
+            {/* KPI GRILLE BASIQUE — tous les plans */}
+            <div className="grid grid-cols-2 gap-3">
+   {/* ENCART CA TOTAL */}
+   <div className="bg-white border border-fs-border rounded-2xl p-4">
+              <p className="text-xs text-fs-gray mb-1">Chiffre d'affaires total</p>
+              <p className="font-nunito font-extrabold text-3xl text-fs-orange mb-3">{formatPrice(ca)}</p>
+              {/* Distinction en ligne / physique */}
+              <div className="flex gap-4 border-t border-fs-border pt-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-fs-orange shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-fs-gray">En ligne</p>
+                    <p className="font-nunito font-extrabold text-sm text-fs-ink">{formatPrice(caOnline)}</p>
                   </div>
-                  {/* CA physique — affiché uniquement si l'artisan a l'addon stock */}
-                  {hasAddon('stock') && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-fs-ink" />
-                      <span className="text-xs text-fs-gray">Physique : {formatPrice(caPhysical)}</span>
+                </div>
+                {hasAddon('stock') && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-fs-ink shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-fs-gray">Physique</p>
+                      <p className="font-nunito font-extrabold text-sm text-fs-ink">{formatPrice(caPhysical)}</p>
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="bg-white border border-fs-border rounded-2xl p-4">
-                <p className="text-xs text-fs-gray mb-1">Commandes en ligne</p>
-                <p className="font-nunito font-extrabold text-xl">{nbCommandes}</p>
-              </div>
-              {/* Ventes physiques — uniquement si addon stock */}
-              {hasAddon('stock') && (
-                <div className="bg-white border border-fs-border rounded-2xl p-4">
-                  <p className="text-xs text-fs-gray mb-1">Ventes physiques</p>
-                  <p className="font-nunito font-extrabold text-xl">{filteredPhysical.length}</p>
-                </div>
-              )}
-              <div className="bg-white border border-fs-border rounded-2xl p-4">
-                <p className="text-xs text-fs-gray mb-1">Panier moyen</p>
-                <p className="font-nunito font-extrabold text-xl">{formatPrice(panierMoyen)}</p>
-              </div>
-              <div className="bg-white border border-fs-border rounded-2xl p-4">
-                <p className="text-xs text-fs-gray mb-1">Taux livraison</p>
-                <p className="font-nunito font-extrabold text-xl">{nbCommandes > 0 ? Math.round((deliveredOrders.length / nbCommandes) * 100) : 0}%</p>
+                  </div>
+                )}
               </div>
             </div>
+            </div>
+
+            {/* KPI GRILLE 3 COLONNES */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* COMMANDES */}
+              <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
+                <p className="text-[10px] text-fs-gray mb-1">Commandes</p>
+                <p className="font-nunito font-extrabold text-lg">{nbCommandes}</p>
+                <p className="text-[10px] text-fs-gray mt-1">
+                  ✅{deliveredOrders.length} · ❌{cancelledOrders.length}
+                </p>
+              </div>
+
+              {/* TAUX LIVRAISON */}
+              <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
+                <p className="text-[10px] text-fs-gray mb-1">Livraison</p>
+                <p className="font-nunito font-extrabold text-lg">{tauxLivraison}%</p>
+                <p className="text-[10px] text-fs-gray mt-1">taux</p>
+              </div>
+
+      {/* TOP PRODUIT */}
+      <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
+                <p className="text-[10px] text-fs-gray mb-1">Top produit</p>
+                <p className="font-nunito font-extrabold text-[11px] leading-tight line-clamp-2">
+                  {topProducts.length > 0 ? (topProducts[0] as any).name : '--'}
+                </p>
+                {topProducts.length > 0 && (
+                  <p className="text-[10px] text-fs-orange mt-1">{formatPrice((topProducts[0] as any).revenue)}</p>
+                )}
+              </div>
+
+              {/* PANIER MOYEN — Pro+ */}
+              {isPro() && (
+                <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
+                  <p className="text-[10px] text-fs-gray mb-1">Panier moyen</p>
+                  <p className="font-nunito font-extrabold text-lg">{formatPrice(panierMoyen)}</p>
+                  <p className="text-[10px] text-fs-gray mt-1">par commande</p>
+                </div>
+              )}
+
+              {/* VENTES PHYSIQUES — si addon stock */}
+              {hasAddon('stock') && (
+                <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
+                  <p className="text-[10px] text-fs-gray mb-1">Ventes physiques</p>
+                  <p className="font-nunito font-extrabold text-lg">{filteredPhysical.length}</p>
+                  <p className="text-[10px] text-fs-gray mt-1">transactions</p>
+                </div>
+              )}
+
+              {/* PIC COMMANDES — Pro+ */}
+              {isPro() && (
+                <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
+                  <p className="text-[10px] text-fs-gray mb-1">Pic commandes</p>
+                  <p className="font-nunito font-extrabold text-sm">⏰ {bestHourLabel}</p>
+                  <p className="text-[10px] text-fs-gray mt-1">{bestDayLabel}</p>
+                </div>
+              )}
+
+            </div>
+
+            {/* CA PAR MODE DE PAIEMENT — tous les plans */}
+            <div className="bg-white border border-fs-border rounded-2xl p-4">
+              <p className="text-xs font-bold text-fs-gray mb-4">CA par mode de paiement</p>
+              <div className="space-y-3">
+                {paymentModes.map(function(mode) {
+                  var mCA = caByPayment[mode]
+                  var pct = ca > 0 ? Math.round((mCA / ca) * 100) : 0
+                  var barWidth = maxPaymentCA > 0 ? Math.max((mCA / maxPaymentCA) * 100, mCA > 0 ? 4 : 0) : 0
+                  if (mCA === 0) return null
+                  return (
+                    <div key={mode}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-fs-ink">
+                          {paymentIcons[mode]} {paymentLabels[mode]}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-fs-gray">{pct}%</span>
+                          <span className="font-nunito font-extrabold text-xs text-fs-orange">{formatPrice(mCA)}</span>
+                        </div>
+                      </div>
+                      {/* Barre graphique */}
+                      <div className="h-2.5 bg-fs-cream rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500"
+                             style={{ width: barWidth + '%', background: paymentColors[mode] }} />
+                      </div>
+                    </div>
+                  )
+                })}
+                {ca === 0 && (
+                  <p className="text-sm text-fs-gray2 text-center py-2">Aucune vente sur cette période</p>
+                )}
+              </div>
+            </div>
+
+            {/* GRAPHIQUE CA 30 JOURS */}
             <div className="bg-white border border-fs-border rounded-2xl p-4">
               <p className="text-xs font-bold text-fs-gray mb-3">CA sur 30 jours</p>
               <div className="flex items-end gap-[3px] h-32">
@@ -231,8 +381,11 @@ export default function DashboardPage() {
                   var height = maxCA > 0 ? Math.max((d.ca / maxCA) * 100, 2) : 2
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                      <div className="hidden group-hover:block absolute -top-8 bg-fs-ink text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap">{d.label} : {formatPrice(d.ca)}</div>
-                      <div className="w-full rounded-t-sm bg-fs-orange transition-all duration-300" style={{ height: height + '%', minHeight: '2px' }} />
+                      <div className="hidden group-hover:block absolute -top-8 bg-fs-ink text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap z-10">
+                        {d.label} : {formatPrice(d.ca)}
+                      </div>
+                      <div className="w-full rounded-t-sm bg-fs-orange transition-all duration-300"
+                           style={{ height: height + '%', minHeight: '2px' }} />
                     </div>
                   )
                 })}
@@ -242,26 +395,25 @@ export default function DashboardPage() {
                 <span className="text-[10px] text-fs-gray2">{dailyCA[29]?.label}</span>
               </div>
             </div>
+
+            {/* TOP PRODUITS */}
             <div className="bg-white border border-fs-border rounded-2xl p-4">
               <p className="text-xs font-bold text-fs-gray mb-3">Top produits</p>
-              {topProducts.length === 0 && <p className="text-sm text-fs-gray2 text-center py-4">Aucune vente sur cette periode</p>}
+              {topProducts.length === 0 && (
+                <p className="text-sm text-fs-gray2 text-center py-4">Aucune vente sur cette période</p>
+              )}
               {topProducts.map(function(p: any, i: number) {
                 var totalQty = p.qtyOnline + p.qtyPhysical
                 return (
                   <div key={i} className="py-2 border-b border-fs-cream last:border-0">
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-full bg-fs-orange-pale text-fs-orange text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                        <div>
-                          <p className="text-sm font-semibold">{p.name}</p>
-                          <p className="text-xs text-fs-gray2">{totalQty} au total</p>
-                        </div>
-                        <span className="text-xs text-fs-gray2">· {totalQty} au total</span>
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-fs-orange-pale text-fs-orange text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                        <p className="text-sm font-semibold">{p.name}</p>
                       </div>
-                      <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(p.revenue)}</p>
+                      <p className="font-nunito font-extrabold text-sm text-fs-orange shrink-0">{formatPrice(p.revenue)}</p>
                     </div>
-                    {/* Distinction vente en ligne vs physique */}
-                    <div className="flex gap-3 ml-9">
+                    <div className="flex gap-3 ml-8">
                       <div className="flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-fs-orange" />
                         <span className="text-xs text-fs-gray">En ligne : {p.qtyOnline}</span>
@@ -272,15 +424,27 @@ export default function DashboardPage() {
                           <span className="text-xs text-fs-gray">Physique : {p.qtyPhysical}</span>
                         </div>
                       )}
+                      <span className="text-xs text-fs-gray2">· {totalQty} total</span>
                     </div>
                   </div>
                 )
               })}
             </div>
+
+            {/* UPSELL VERS PRO — Starter uniquement */}
+            {!isPro() && (
+              <div className="bg-fs-orange-pale border border-fs-orange rounded-2xl p-4 text-center">
+                <p className="text-sm font-bold text-fs-orange mb-1">📈 Passez en Pro</p>
+                <p className="text-xs text-fs-gray">Débloquez : panier moyen, pic de commandes, analytics visiteurs et taux de conversion.</p>
+              </div>
+            )}
           </div>
         )}
 
-        {tab === 'analytics' && (
+        {/* ═══════════════════════════════════════════════
+            ONGLET ANALYTICS — PRO + PREMIUM uniquement
+        ═══════════════════════════════════════════════ */}
+        {tab === 'analytics' && isPro() && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white border border-fs-border rounded-2xl p-4">
@@ -292,6 +456,8 @@ export default function DashboardPage() {
                 <p className="font-nunito font-extrabold text-xl text-fs-orange">{tauxConversion}%</p>
               </div>
             </div>
+
+            {/* GRAPHIQUE VISITEURS */}
             <div className="bg-white border border-fs-border rounded-2xl p-4">
               <p className="text-xs font-bold text-fs-gray mb-3">Visiteurs sur 30 jours</p>
               <div className="flex items-end gap-[3px] h-32">
@@ -299,8 +465,11 @@ export default function DashboardPage() {
                   var height = maxVisits > 0 ? Math.max((d.count / maxVisits) * 100, 2) : 2
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                      <div className="hidden group-hover:block absolute -top-8 bg-fs-ink text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap">{d.label} : {d.count} visite{d.count > 1 ? 's' : ''}</div>
-                      <div className="w-full rounded-t-sm bg-blue-500 transition-all duration-300" style={{ height: height + '%', minHeight: '2px' }} />
+                      <div className="hidden group-hover:block absolute -top-8 bg-fs-ink text-white text-[10px] px-2 py-1 rounded-lg whitespace-nowrap z-10">
+                        {d.label} : {d.count} visite{d.count > 1 ? 's' : ''}
+                      </div>
+                      <div className="w-full rounded-t-sm bg-blue-400 transition-all duration-300"
+                           style={{ height: height + '%', minHeight: '2px' }} />
                     </div>
                   )
                 })}
@@ -310,9 +479,13 @@ export default function DashboardPage() {
                 <span className="text-[10px] text-fs-gray2">{dailyVisits[29]?.label}</span>
               </div>
             </div>
+
+            {/* SOURCES DE TRAFIC */}
             <div className="bg-white border border-fs-border rounded-2xl p-4">
               <p className="text-xs font-bold text-fs-gray mb-3">Sources de trafic</p>
-              {referrerList.length === 0 && <p className="text-sm text-fs-gray2 text-center py-4">Pas encore de donnees</p>}
+              {referrerList.length === 0 && (
+                <p className="text-sm text-fs-gray2 text-center py-4">Pas encore de données</p>
+              )}
               {referrerList.map(function(entry: any, i: number) {
                 var name = entry[0]
                 var count = entry[1]
@@ -320,8 +493,8 @@ export default function DashboardPage() {
                 return (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-fs-cream last:border-0">
                     <div className="flex items-center gap-3">
-                      <span className="text-lg">{referrerIcons[name] || '🌐'}</span>
-                      <span className="text-sfont-semibold capitalize">{name}</span>
+                      <span className="text-base">{referrerIcons[name] || '🌐'}</span>
+                      <span className="text-sm font-semibold capitalize">{name}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-sm font-bold">{count}</span>
@@ -333,6 +506,89 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ═══════════════════════════════════════════════
+            ONGLET PRÉVISION — PREMIUM uniquement
+        ═══════════════════════════════════════════════ */}
+        {tab === 'prevision' && isPremium() && (
+          <div className="space-y-4">
+            {/* PRÉVISION CA */}
+            <div className="bg-white border border-fs-border rounded-2xl p-4">
+              <p className="text-xs font-bold text-fs-gray mb-3">🔮 Prévision CA mois prochain</p>
+              {hasEnoughData && previsionCA !== null ? (
+                <div>
+                  <p className="font-nunito font-extrabold text-2xl text-fs-orange mb-2">
+                    {formatPrice(previsionCA)}
+                  </p>
+                  <p className="text-xs text-fs-gray">Basée sur votre tendance des 3 derniers mois</p>
+                  <div className="mt-4 space-y-2">
+                    {caMonths.map(function(mca, i) {
+                      var monthNames = ['Il y a 2 mois', 'Le mois dernier', 'Ce mois']
+                      return (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span className="text-fs-gray">{monthNames[i]}</span>
+                          <span className="font-nunito font-extrabold text-fs-ink">{formatPrice(mca)}</span>
+                        </div>
+                      )
+                    })}
+                    <div className="flex items-center justify-between text-sm pt-2 border-t border-fs-border">
+                      <span className="font-bold text-fs-orange">Prévision</span>
+                      <span className="font-nunito font-extrabold text-fs-orange">{formatPrice(previsionCA)}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-3xl mb-3">📊</p>
+                  <p className="text-sm font-bold text-fs-ink mb-1">Données insuffisantes</p>
+                  <p className="text-xs text-fs-gray">La prévision sera disponible après 3 mois d'activité.</p>
+                  <div className="mt-3 bg-fs-cream rounded-xl p-3">
+                    <div className="flex justify-between text-xs text-fs-gray">
+                      <span>Mois avec données</span>
+                      <span className="font-bold">{caMonths.filter(function(c) { return c > 0 }).length} / 3</span>
+                    </div>
+                    <div className="h-2 bg-fs-border rounded-full mt-2 overflow-hidden">
+                      <div className="h-full bg-fs-orange rounded-full"
+                           style={{ width: (caMonths.filter(function(c) { return c > 0 }).length / 3 * 100) + '%' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* RECOMMANDATIONS IA — placeholder */}
+            <div className="bg-fs-ink rounded-2xl p-4">
+              <p className="text-xs font-bold text-white mb-3">💡 Recommandations fortunashop</p>
+              {nbCommandes > 0 ? (
+                <div className="space-y-3">
+                  {panierMoyen < 20000 && (
+                    <div className="bg-white/10 rounded-xl p-3">
+                      <p className="text-xs text-white">Votre panier moyen est de {formatPrice(panierMoyen)}. Proposez des bundles de produits pour atteindre 25 000 FCFA.</p>
+                    </div>
+                  )}
+                  {tauxLivraison < 80 && (
+                    <div className="bg-white/10 rounded-xl p-3">
+                      <p className="text-xs text-white">Votre taux de livraison est de {tauxLivraison}%. Contactez les clients avec commandes en attente pour améliorer ce chiffre.</p>
+                    </div>
+                  )}
+                  {bestHour && (
+                    <div className="bg-white/10 rounded-xl p-3">
+                      <p className="text-xs text-white">Vos clients commandent surtout à {bestHourLabel} le {bestDayLabel}. Publiez vos promotions juste avant ce créneau.</p>
+                    </div>
+                  )}
+                  {topProducts.length > 0 && (
+                    <div className="bg-white/10 rounded-xl p-3">
+                      <p className="text-xs text-white">"{(topProducts[0] as any).name}" est votre meilleur produit. Mettez-le en avant sur votre boutique et vos réseaux.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-white/60">Les recommandations apparaîtront après vos premières ventes.</p>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

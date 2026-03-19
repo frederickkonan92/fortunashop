@@ -14,10 +14,10 @@ const dmSans = DM_Sans({
 })
 
 export const metadata = {
-  title: 'fortunashop — Boutique artisan',
+  title: 'fortunashop — Votre boutique professionnelle en ligne en 7 jours',
   description: 'Votre boutique en ligne, livrée en 7 jours.',
   openGraph: {
-    title: 'fortunashop — Boutique artisan',
+    title: 'fortunashop — Votre boutique professionnelle en ligne en 7 jours',
     description: 'Boutique en ligne pour artisans. Commandez en quelques secondes.',
     type: 'website',
   },
