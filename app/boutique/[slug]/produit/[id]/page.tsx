@@ -44,6 +44,8 @@ export default function ProduitPage() {
   var [shop, setShop] = useState<any>(null)
   var [loading, setLoading] = useState(true)
   var [added, setAdded] = useState(false)
+  var [variants, setVariants] = useState<any[]>([])
+  var [selectedVariant, setSelectedVariant] = useState<any>(null)
 
   useEffect(function() {
     async function load() {
@@ -51,6 +53,13 @@ export default function ProduitPage() {
       setShop(shopRes.data)
       var prodRes = await supabase.from('products').select('*').eq('id', id).single()
       setProduct(prodRes.data)
+      // Charge les variantes si le produit en a
+      if (prodRes.data?.has_variants) {
+        var varRes = await supabase.from('product_variants')
+          .select('*').eq('product_id', id).eq('is_active', true)
+          .order('sort_order', { ascending: true })
+        setVariants(varRes.data || [])
+      }
       setLoading(false)
     }
     load()
@@ -58,18 +67,28 @@ export default function ProduitPage() {
 
   var addToCart = function() {
     if (!product) return
-    // Stock disponible en ligne = stock total - tampon physique
-    var stockOnline = product.stock_quantity != null
-      ? Math.max(0, product.stock_quantity - (product.stock_buffer || 0))
+    // Si le produit a des variantes, une doit être sélectionnée
+    if (product.has_variants && variants.length > 0 && !selectedVariant) {
+      alert('Veuillez choisir une variante avant d\'ajouter au panier.')
+      return
+    }
+    // Stock : utilise le stock de la variante si elle en a un, sinon stock produit
+    var stockSource = selectedVariant?.stock_quantity ?? product.stock_quantity
+    var stockOnline = stockSource != null
+      ? Math.max(0, stockSource - (product.stock_buffer || 0))
       : 999
-    var currentQty = cart.items.find(function(i) { return i.id === product.id })?.quantity || 0
+    // Clé unique panier = id produit + variante (ex: "uuid-M" ou "uuid-Rouge")
+    var cartId = selectedVariant ? product.id + '-' + selectedVariant.variant_value : product.id
+    var currentQty = cart.items.find(function(i) { return i.id === cartId })?.quantity || 0
     if (currentQty >= stockOnline) return
+    // Prix : utilise le prix override de la variante si défini
+    var price = selectedVariant?.price_override ?? product.price
     cart.addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
+      id: cartId,
+      name: product.name + (selectedVariant ? ' — ' + selectedVariant.variant_value : ''),
+      price: price,
       image_url: product.image_url,
-      stock_quantity: product.stock_quantity
+      stock_quantity: stockSource
     })
     setAdded(true)
     setTimeout(function() { setAdded(false) }, 2000)
@@ -132,11 +151,52 @@ export default function ProduitPage() {
           </div>
         )}
 
-        {stockStatus === 'available' && (
+{stockStatus === 'available' && !product.has_variants && (
           <p className="text-xs font-semibold text-fs-green mb-4">{product.stock_quantity} en stock</p>
         )}
-        {stockStatus === 'out' && (
+        {stockStatus === 'out' && !product.has_variants && (
           <p className="text-xs font-semibold text-red-500 mb-4">Rupture de stock</p>
+        )}
+
+        {/* SÉLECTEUR VARIANTES */}
+        {product.has_variants && variants.length > 0 && (
+          <div className="mb-4">
+            <p className="text-sm font-bold mb-2">
+              {variants[0]?.variant_type === 'color' ? 'Couleur' :
+               variants[0]?.variant_type === 'size_shoes' ? 'Pointure' :
+               variants[0]?.variant_type === 'size_clothing' ? 'Taille' : 'Variante'}
+              {selectedVariant && (
+                <span className="ml-2 text-fs-orange">{selectedVariant.variant_value}</span>
+              )}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {variants.map(function(v: any) {
+                var vStock = v.stock_quantity
+                var isOut = vStock != null && vStock <= 0
+                var isSelected = selectedVariant?.id === v.id
+                return (
+                  <button key={v.id} type="button"
+                          onClick={function() { if (!isOut) setSelectedVariant(isSelected ? null : v) }}
+                          disabled={isOut}
+                          className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
+                            (isOut ? 'border-fs-border text-gray-300 line-through cursor-not-allowed' :
+                             isSelected ? 'border-fs-orange bg-fs-orange text-white' :
+                             'border-fs-border bg-white text-fs-ink hover:border-fs-orange')}>
+                    {v.variant_value}
+                    {vStock != null && vStock > 0 && vStock <= 3 && !isOut && (
+                      <span className="ml-1 text-[10px] text-amber-500">({vStock})</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            {/* Stock de la variante sélectionnée */}
+            {selectedVariant && selectedVariant.stock_quantity != null && (
+              <p className="text-xs font-semibold text-fs-green mt-2">
+                {selectedVariant.stock_quantity} en stock pour cette taille
+              </p>
+            )}
+          </div>
         )}
 
         {/* Bouton Ajouter au panier */}

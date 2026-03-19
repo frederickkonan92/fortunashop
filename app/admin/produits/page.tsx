@@ -22,6 +22,36 @@ export default function ProduitsPage() {
   stock_alert: '3',
   stock_buffer: '0',
 })
+var [hasVariants, setHasVariants] = useState(false)
+var [variants, setVariants] = useState<any[]>([])
+var [variantType, setVariantType] = useState('custom')
+
+var VARIANT_PRESETS: any = {
+  size_clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  size_shoes: ['38', '39', '40', '41', '42', '43', '44', '45'],
+  color: ['Noir', 'Blanc', 'Rouge', 'Bleu', 'Vert', 'Jaune', 'Rose', 'Gris'],
+  custom: [],
+}
+
+var addVariant = function(value: string) {
+  if (!value.trim()) return
+  if (variants.find(function(v) { return v.variant_value === value.trim() })) return
+  setVariants(function(prev) {
+    return [...prev, { variant_value: value.trim(), variant_type: variantType, stock_quantity: '', price_override: '', is_active: true }]
+  })
+}
+
+var removeVariant = function(index: number) {
+  setVariants(function(prev) { return prev.filter(function(_, i) { return i !== index }) })
+}
+
+var updateVariant = function(index: number, field: string, value: string) {
+  setVariants(function(prev) {
+    var next = [...prev]
+    next[index] = { ...next[index], [field]: value }
+    return next
+  })
+}
 
   useEffect(function() { loadData() }, [])
 
@@ -85,10 +115,13 @@ var resetForm = function() {
   setShowForm(false)
   setImageFiles([null, null, null])
   setImagePreviews([null, null, null])
+  setHasVariants(false)
+  setVariants([])
+  setVariantType('custom')
 }
 
 
-var startEdit = function(product: any) {
+var startEdit = async function(product: any) {
   setForm({
     name: product.name,
     price: String(product.price),
@@ -98,9 +131,20 @@ var startEdit = function(product: any) {
     stock_buffer: String(product.stock_buffer || 0),
   })
   setEditing(product)
-  // Précharge les 3 previews existantes depuis le produit
   setImagePreviews([product.image_url || null, product.image_url_2 || null, product.image_url_3 || null])
   setImageFiles([null, null, null])
+  setHasVariants(product.has_variants || false)
+  // Charge les variantes existantes du produit
+  if (product.has_variants) {
+    var varRes = await supabase.from('product_variants').select('*').eq('product_id', product.id).order('sort_order', { ascending: true })
+    var loaded = (varRes.data || []).map(function(v: any) {
+      return { ...v, stock_quantity: v.stock_quantity != null ? String(v.stock_quantity) : '', price_override: v.price_override != null ? String(v.price_override) : '' }
+    })
+    setVariants(loaded)
+    if (loaded.length > 0) setVariantType(loaded[0].variant_type)
+  } else {
+    setVariants([])
+  }
   setShowForm(true)
 }
 
@@ -141,14 +185,36 @@ var startEdit = function(product: any) {
         productData.is_active = false
       }
     }
+    var productId = editing?.id
     if (editing) {
-      await supabase.from('products').update(productData).eq('id', editing.id)
+      await supabase.from('products').update({ ...productData, has_variants: hasVariants }).eq('id', editing.id)
       if (!isStockOnlyEdit) {
         await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'update' })
       }
     } else {
-      await supabase.from('products').insert(productData)
+      var insertRes = await supabase.from('products').insert({ ...productData, has_variants: hasVariants }).select().single()
+      productId = insertRes.data?.id
       await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'create' })
+    }
+    // Sauvegarde des variantes
+    if (hasVariants && productId && variants.length > 0) {
+      // Supprime les anciennes variantes puis réinsère
+      await supabase.from('product_variants').delete().eq('product_id', productId)
+      var variantsToInsert = variants.map(function(v: any, i: number) {
+        return {
+          product_id: productId,
+          variant_type: variantType,
+          variant_value: v.variant_value,
+          stock_quantity: v.stock_quantity !== '' ? parseInt(v.stock_quantity) : null,
+          price_override: v.price_override !== '' ? parseInt(v.price_override) : null,
+          is_active: v.is_active !== false,
+          sort_order: i,
+        }
+      })
+      await supabase.from('product_variants').insert(variantsToInsert)
+    } else if (!hasVariants && editing) {
+      // Si on désactive les variantes → supprime toutes les variantes
+      await supabase.from('product_variants').delete().eq('product_id', productId)
     }
     resetForm()
     loadData()
@@ -307,6 +373,118 @@ var startEdit = function(product: any) {
                         className="flex-1 bg-fs-orange text-white font-bold py-3 rounded-xl hover:bg-fs-orange-deep transition disabled:opacity-50">
                   {loading ? 'Enregistrement...' : (editing ? 'Modifier' : 'Ajouter')}
                 </button>
+                {/* SECTION VARIANTES */}
+              <div className="border-t border-fs-border pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-bold">Variantes</p>
+                    <p className="text-[11px] text-fs-gray">Tailles, couleurs, pointures...</p>
+                  </div>
+                  {/* Toggle activer/désactiver les variantes */}
+                  <div onClick={function() { setHasVariants(!hasVariants); setVariants([]) }}
+                       className={'w-12 h-6 rounded-full cursor-pointer transition-all relative ' + (hasVariants ? 'bg-fs-orange' : 'bg-fs-border')}>
+                    <div className={'w-5 h-5 bg-white rounded-full absolute top-0.5 transition-all shadow ' + (hasVariants ? 'left-6' : 'left-0.5')} />
+                  </div>
+                </div>
+
+                {hasVariants && (
+                  <div className="space-y-3">
+                    {/* TYPE DE VARIANTE */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-2">Type de variante</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { key: 'size_clothing', label: '👗 Vêtements', sub: 'XS → XXL' },
+                          { key: 'size_shoes', label: '👟 Chaussures', sub: '38 → 45' },
+                          { key: 'color', label: '🎨 Couleurs', sub: 'Noir, Rouge...' },
+                          { key: 'custom', label: '✏️ Personnalisé', sub: 'Valeurs libres' },
+                        ].map(function(t) {
+                          return (
+                            <button key={t.key} type="button"
+                                    onClick={function() { setVariantType(t.key); setVariants([]) }}
+                                    className={'p-2 rounded-xl border text-left transition ' + (variantType === t.key ? 'border-fs-orange bg-fs-orange-pale' : 'border-fs-border bg-white')}>
+                              <p className={'text-xs font-bold ' + (variantType === t.key ? 'text-fs-orange' : 'text-fs-ink')}>{t.label}</p>
+                              <p className="text-[10px] text-fs-gray">{t.sub}</p>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* AJOUT RAPIDE DEPUIS PRESET */}
+                    {variantType !== 'custom' && VARIANT_PRESETS[variantType]?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold mb-2">Ajout rapide</p>
+                        <div className="flex flex-wrap gap-2">
+                          {VARIANT_PRESETS[variantType].map(function(val: string) {
+                            var already = variants.find(function(v) { return v.variant_value === val })
+                            return (
+                              <button key={val} type="button"
+                                      onClick={function() { already ? removeVariant(variants.findIndex(function(v) { return v.variant_value === val })) : addVariant(val) }}
+                                      className={'px-3 py-1.5 rounded-full text-xs font-bold border transition ' + (already ? 'bg-fs-orange text-white border-fs-orange' : 'bg-white text-fs-gray border-fs-border')}>
+                                {val}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AJOUT VALEUR LIBRE */}
+                    {variantType === 'custom' && (
+                      <div className="flex gap-2">
+                        <input id="custom-variant-input" type="text"
+                               placeholder="Ex : Grande taille, Taille unique..."
+                               className="flex-1 border border-fs-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange" />
+                        <button type="button"
+                                onClick={function() {
+                                  var input = document.getElementById('custom-variant-input') as HTMLInputElement
+                                  if (input?.value) { addVariant(input.value); input.value = '' }
+                                }}
+                                className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">
+                          + Ajouter
+                        </button>
+                      </div>
+                    )}
+
+                    {/* LISTE DES VARIANTES AJOUTÉES */}
+                    {variants.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-fs-gray">{variants.length} variante{variants.length > 1 ? 's' : ''}</p>
+                        {variants.map(function(v: any, i: number) {
+                          return (
+                            <div key={i} className="bg-fs-cream rounded-xl p-3 flex items-center gap-3">
+                              {/* Nom variante */}
+                              <span className="font-nunito font-extrabold text-xs text-fs-ink w-12 shrink-0">{v.variant_value}</span>
+                              {/* Stock par variante */}
+                              <div className="flex-1">
+                                <input type="number" value={v.stock_quantity}
+                                       onChange={function(e) { updateVariant(i, 'stock_quantity', e.target.value) }}
+                                       placeholder="Stock"
+                                       className="w-full border border-fs-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-fs-orange bg-white" />
+                              </div>
+                              {/* Prix override optionnel */}
+                              <div className="flex-1">
+                                <input type="number" value={v.price_override}
+                                       onChange={function(e) { updateVariant(i, 'price_override', e.target.value) }}
+                                       placeholder="Prix (opt.)"
+                                       className="w-full border border-fs-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-fs-orange bg-white" />
+                              </div>
+                              {/* Supprimer */}
+                              <button type="button" onClick={function() { removeVariant(i) }}
+                                      className="text-red-400 text-xs font-bold shrink-0">✕</button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {variants.length === 0 && (
+                      <p className="text-xs text-fs-gray2 text-center py-2">Aucune variante ajoutée</p>
+                    )}
+                  </div>
+                )}
+              </div>
                 <button type="button" onClick={resetForm}
                         className="px-4 py-3 rounded-xl border border-fs-border text-fs-gray font-semibold">
                   Annuler

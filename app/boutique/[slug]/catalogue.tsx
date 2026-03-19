@@ -116,6 +116,10 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                       <p className="text-xs text-fs-gray mb-1 line-clamp-2">{product.description}</p>
                     )}
                     <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(product.price)}</p>
+                    {/* Badge variantes — visible uniquement si le produit a des variantes */}
+                    {product.has_variants && (
+                      <p className="text-[10px] text-fs-gray mt-1">✦ Plusieurs modèles disponibles</p>
+                    )}
                   </div>
                 </a>
 
