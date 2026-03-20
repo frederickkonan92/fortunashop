@@ -24,7 +24,7 @@ export default function LandingPage() {
   var [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle')
   var [formLoading, setFormLoading] = useState(false)
   var whatsappBase = 'https://wa.me/33664765696'
-  var demoUrl = '/boutique/boutique-test'
+  var demoUrl = '/boutique/kente-fashion-test'
 
   var plans = [
     {
