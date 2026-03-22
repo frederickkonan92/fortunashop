@@ -59,12 +59,21 @@ export default function CommanderPage() {
 
     if (!orderRes.error && orderRes.data) {
       var orderItems = cart.items.map(function(item) {
+        // Pour les variantes, l'id panier = "productId-variantValue"
+        // On extrait le vrai product_id en prenant la partie avant le premier "-"
+        // Ex: "abc123-Rouge" → product_id = "abc123", variant = "Rouge"
+        var parts = item.id.split('-')
+        var isVariant = parts.length > 5 // UUID a 5 parties séparées par "-"
+        var realProductId = isVariant ? parts.slice(0, 5).join('-') : item.id
+        var variantValue = isVariant ? parts.slice(5).join('-') : null
+
         return {
           order_id: orderRes.data.id,
-          product_id: item.id,
+          product_id: realProductId,
           product_name: item.name,
           product_price: item.price,
-          quantity: item.quantity
+          quantity: item.quantity,
+          variant_value: variantValue
         }
       })
       await supabase.from('order_items').insert(orderItems)
@@ -72,11 +81,25 @@ export default function CommanderPage() {
       for (var i = 0; i < cart.items.length; i++) {
         var item = cart.items[i]
         if (item.stock_quantity != null) {
+          var parts2 = item.id.split('-')
+          var isVariant2 = parts2.length > 5
+          var realId = isVariant2 ? parts2.slice(0, 5).join('-') : item.id
+          var variantVal = isVariant2 ? parts2.slice(5).join('-') : null
           var newStock = Math.max(0, item.stock_quantity - item.quantity)
-          await supabase.from('products').update({
-            stock_quantity: newStock,
-            is_active: newStock > 0
-          }).eq('id', item.id)
+
+          if (isVariant2 && variantVal) {
+            // Met à jour le stock de la variante spécifique
+            await supabase.from('product_variants')
+              .update({ stock_quantity: newStock })
+              .eq('product_id', realId)
+              .eq('variant_value', variantVal)
+          } else {
+            // Produit sans variante → met à jour le stock produit
+            await supabase.from('products').update({
+              stock_quantity: newStock,
+              is_active: newStock > 0
+            }).eq('id', realId)
+          }
 
           // Récupère les infos complètes du produit pour vérifier le seuil
           var prodCheck = await supabase.from('products').select('*').eq('id', item.id).single()
@@ -288,18 +311,18 @@ export default function CommanderPage() {
           return (
             <div key={item.id} className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3">
               {/* Image du produit */}
-              <div className="w-12 h-12 bg-fs-cream rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-fs-border">
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
                 ) : (
                   <span className="text-xl">🛍️</span>
                 )}
               </div>
 
-              {/* Nom + prix unitaire */}
+              {/* Nom + variantes + prix unitaire */}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{item.name}</p>
-                <p className="text-xs text-fs-gray">{formatPrice(item.price)} / unité</p>
+              <p className="font-semibold text-sm line-clamp-2 leading-tight">{item.name}</p>
+              <p className="text-xs text-fs-gray mt-0.5">{formatPrice(item.price)} / unité</p>
               </div>
 
               {/* Contrôles quantité + suppression */}

@@ -13,8 +13,11 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
   var [selected, setSelected] = useState(0)
   return (
     <div>
-      {/* Photo principale */}
-      <img src={photos[selected]} alt={productName} className="w-full h-72 object-cover" />
+      {/* Photo principale — object-contain pour voir l'article entier */}
+      <div className="w-full h-80 bg-white flex items-center justify-center overflow-hidden">
+        <img src={photos[selected]} alt={productName}
+             className="w-full h-full object-contain" />
+      </div>
       {/* Miniatures — affichées seulement s'il y a plus d'une photo */}
       {photos.length > 1 && (
         <div className="flex gap-2 p-3 bg-white">

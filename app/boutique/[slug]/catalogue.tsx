@@ -12,6 +12,8 @@ export default function CatalogueClient({ slug }: { slug: string }) {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const cart = useCart()
+  const [variantPopup, setVariantPopup] = useState<any>(null)
+  const [selectedVariant, setSelectedVariant] = useState<any>(null)
 
   useEffect(function() {
     async function load() {
@@ -20,7 +22,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
       setShop(shopRes.data)
       if (shopRes.data) {
         var prodRes = await supabase
-          .from('products').select('*')
+          .from('products').select('*, product_variants(*)')
           .eq('shop_id', shopRes.data.id)
           .eq('is_active', true)
           .order('sort_order', { ascending: true })
@@ -105,7 +107,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                 <a href={'/boutique/' + shop.slug + '/produit/' + product.id} className="block">
                   <div className="aspect-square bg-fs-cream flex items-center justify-center">
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                      <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
                     ) : (
                       <span className="text-5xl">🛍️</span>
                     )}
@@ -116,18 +118,42 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                       <p className="text-xs text-fs-gray mb-1 line-clamp-2">{product.description}</p>
                     )}
                     <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(product.price)}</p>
-                    {/* Badge variantes — visible uniquement si le produit a des variantes */}
-                    {product.has_variants && (
-                      <p className="text-[10px] text-fs-gray mt-1">✦ Plusieurs modèles disponibles</p>
+
+                    {/* BADGES VARIANTES */}
+                    {product.has_variants && product.product_variants && product.product_variants.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {product.product_variants
+                          .filter(function(v: any) { return v.is_active })
+                          .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
+                          .map(function(v: any) {
+                            var isOut = v.stock_quantity != null && v.stock_quantity <= 0
+                            return (
+                              <span key={v.id}
+                                    className={'text-[10px] px-1.5 py-0.5 rounded border ' +
+                                      (isOut
+                                        ? 'border-fs-border text-fs-border line-through'
+                                        : 'border-fs-gray2 text-fs-gray2')}>
+                                {v.variant_value}
+                              </span>
+                            )
+                          })}
+                      </div>
                     )}
                   </div>
                 </a>
 
                 {/* ZONE BOUTONS : hors du <a> → pas de redirection au clic */}
                 <div className="p-3 pt-2">
-                  {qty === 0 ? (
+                {qty === 0 ? (
                     <button
-                      onClick={function() { handleAdd(product) }}
+                      onClick={function() {
+                        if (product.has_variants && product.product_variants?.length > 0) {
+                          setSelectedVariant(null)
+                          setVariantPopup(product)
+                        } else {
+                          handleAdd(product)
+                        }
+                      }}
                       className="w-full bg-fs-ink text-white text-center text-xs font-bold py-2.5 rounded-xl hover:bg-fs-orange transition">
                       Ajouter
                     </button>
@@ -170,7 +196,88 @@ export default function CatalogueClient({ slug }: { slug: string }) {
           </div>
         )}
       </main>
+{/* POPUP SÉLECTION VARIANTE */}
+{variantPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={function() { setVariantPopup(null); setSelectedVariant(null) }}>
+         <div
+            className="bg-white w-full max-w-lg rounded-t-2xl p-5 pb-24"
+            onClick={function(e) { e.stopPropagation() }}>
 
+            {/* Header popup */}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="font-nunito font-extrabold text-base">{variantPopup.name}</p>
+                <p className="text-xs text-fs-gray">
+                  {variantPopup.product_variants[0]?.variant_type === 'color' ? 'Choisir une couleur' :
+                   variantPopup.product_variants[0]?.variant_type === 'size_shoes' ? 'Choisir une pointure' :
+                   variantPopup.product_variants[0]?.variant_type === 'size_clothing' ? 'Choisir une taille' :
+                   'Choisir un modèle'}
+                </p>
+              </div>
+              <button
+                onClick={function() { setVariantPopup(null); setSelectedVariant(null) }}
+                className="w-8 h-8 rounded-full bg-fs-cream flex items-center justify-center text-fs-gray font-bold">
+                ✕
+              </button>
+            </div>
+
+            {/* Badges sélectionnables */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              {variantPopup.product_variants
+                .filter(function(v: any) { return v.is_active })
+                .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
+                .map(function(v: any) {
+                  var isOut = v.stock_quantity != null && v.stock_quantity <= 0
+                  var isSelected = selectedVariant?.id === v.id
+                  return (
+                    <button key={v.id}
+                            disabled={isOut}
+                            onClick={function() { setSelectedVariant(isSelected ? null : v) }}
+                            className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
+                              (isOut
+                                ? 'border-fs-border text-fs-border line-through cursor-not-allowed'
+                                : isSelected
+                                  ? 'border-fs-orange bg-fs-orange text-white'
+                                  : 'border-fs-border text-fs-ink hover:border-fs-orange')}>
+                      {v.variant_value}
+                      {v.stock_quantity != null && v.stock_quantity > 0 && v.stock_quantity <= 3 && (
+                        <span className="ml-1 text-[10px] text-amber-500">({v.stock_quantity})</span>
+                      )}
+                    </button>
+                  )
+                })}
+            </div>
+
+            {/* Bouton confirmer */}
+            <button
+              disabled={!selectedVariant}
+              onClick={function() {
+                if (!selectedVariant) return
+                var price = selectedVariant.price_override ?? variantPopup.price
+                var cartId = variantPopup.id + '-' + selectedVariant.variant_value
+                cart.addItem({
+                  id: cartId,
+                  name: variantPopup.name + ' — ' + selectedVariant.variant_value,
+                  price: price,
+                  image_url: variantPopup.image_url,
+                  stock_quantity: selectedVariant.stock_quantity
+                })
+                setVariantPopup(null)
+                setSelectedVariant(null)
+              }}
+              className="w-full bg-fs-orange text-white font-bold py-3.5 rounded-xl transition disabled:opacity-40">
+              {selectedVariant
+                ? 'Ajouter au panier — ' + (selectedVariant.price_override
+                    ? new Intl.NumberFormat('fr-FR').format(selectedVariant.price_override) + ' FCFA'
+                    : new Intl.NumberFormat('fr-FR').format(variantPopup.price) + ' FCFA')
+                : 'Choisir un modèle'}
+            </button>
+          </div>
+        </div>
+      )}
       {/* FOOTER */}
       <footer className="bg-fs-cream2 border-t border-fs-border py-5 text-center">
         <p className="text-sm text-fs-gray">

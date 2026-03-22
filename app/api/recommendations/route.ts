@@ -3,20 +3,27 @@ import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 
 // NOTE: route handler must export named HTTP methods (POST/GET) for Next.js app router.
+// IMPORTANT: ne pas initialiser les clients à l'évaluation du module (sinon le build peut planter
+// si des variables d'environnement ne sont pas encore injectées).
+function getSupabaseAdmin() {
+  var url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  var serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL manquant')
+  if (!serviceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY manquant')
+  return createClient(url, serviceRoleKey)
+}
 
-// Initialise Supabase avec la clé service (accès complet, côté serveur uniquement)
-var supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-// Initialise le client Anthropic
-var anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!
-})
+function getAnthropic() {
+  var apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY manquant')
+  return new Anthropic({ apiKey })
+}
 
 export async function POST(req: NextRequest) {
   try {
+    var supabase = getSupabaseAdmin()
+    var anthropic = getAnthropic()
+
     var body = await req.json()
     var shopId = body.shop_id
     if (!shopId) return NextResponse.json({ error: 'shop_id manquant' }, { status: 400 })
