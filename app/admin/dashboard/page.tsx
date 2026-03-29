@@ -143,7 +143,7 @@ export default function DashboardPage() {
   }
 
   // Si l'onboarding n'est pas terminé, afficher le wizard
-  if (shop && shop.onboarding_completed === false) {
+  if (shop && shop.onboarding_completed !== true) {
     return <OnboardingWizard shop={shop} />
   }
 

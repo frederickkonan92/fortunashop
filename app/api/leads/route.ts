@@ -25,14 +25,14 @@ export async function POST(request: Request) {
       nom: body.nom,
       whatsapp: body.whatsapp,
       activite: body.activite || null,
-      plan: body.plan || null,
+      plan_souhaite: body.plan || null,
       lien_social: body.lien_social || null,
       addons: body.addons || [],
     }).select().single()
 
     if (error) {
-      console.error('Erreur insert lead:', error)
-      return NextResponse.json({ error: 'Erreur insertion' }, { status: 500 })
+      console.error('Erreur insert lead:', JSON.stringify(error))
+      return NextResponse.json({ error: 'Erreur insertion', details: error.message }, { status: 500 })
     }
 
     // Construit le message de notification WhatsApp pour Frédérick
