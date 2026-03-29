@@ -111,6 +111,8 @@ export default function DashboardPage() {
   var [loading, setLoading] = useState(true)
   var [physicalSales, setPhysicalSales] = useState<any[]>([])
 
+  console.log('DASHBOARD RENDER - shop:', shop?.slug, 'onboarding:', shop?.onboarding_completed)
+
   useEffect(function() { loadData() }, [])
 
   var loadData = async function() {
@@ -135,6 +137,7 @@ export default function DashboardPage() {
   var isPremium = function() { return shop?.plan === 'premium' }
 
   if (loading) {
+    console.log('RETURN ANTICIPÉ ICI - raison: loading est true, données pas encore chargées')
     return (
       <div className="min-h-screen bg-fs-cream flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-fs-orange border-t-transparent rounded-full" />
@@ -142,6 +145,7 @@ export default function DashboardPage() {
     )
   }
 
+  console.log('AVANT CHECK ONBOARDING - shop existe:', !!shop, 'valeur:', shop?.onboarding_completed)
   // Si l'onboarding n'est pas terminé, afficher le wizard
   if (shop && shop.onboarding_completed !== true) {
     return <OnboardingWizard shop={shop} />

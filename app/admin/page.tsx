@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import AdminNav from './nav'
 import { formatPrice, statusStyle, statusLabel } from '@/lib/utils'
+import OnboardingWizard from '@/components/onboarding'
 
 export default function AdminPage() {
   var [orders, setOrders] = useState<any[]>([])
@@ -11,6 +12,7 @@ export default function AdminPage() {
   var [shop, setShop] = useState<any>(null)
   var [livreurLinks, setLivreurLinks] = useState<any>({})
 
+  var [loading, setLoading] = useState(true)
   var [lastCount, setLastCount] = useState(0)
   var [notifPermission, setNotifPermission] = useState('default')
 
@@ -57,6 +59,7 @@ export default function AdminPage() {
         .eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setOrders(ordersRes.data || [])
     }
+    setLoading(false)
   }
 
   var updateStatus = async function(orderId: string, newStatus: string) {
@@ -124,6 +127,19 @@ export default function AdminPage() {
   var countByStatus = function(s: string) { return orders.filter(function(o) { return o.status === s }).length }
   var todayCount = orders.filter(function(o) { return new Date(o.created_at).toDateString() === new Date().toDateString() }).length
   var caLivre = orders.filter(function(o) { return o.status === 'livree' }).reduce(function(sum, o) { return sum + o.total }, 0)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-fs-cream flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-fs-orange border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  // Si l'onboarding n'est pas terminé, afficher le wizard
+  if (shop && shop.onboarding_completed !== true) {
+    return <OnboardingWizard shop={shop} />
+  }
 
   return (
     <div className="min-h-screen bg-fs-cream">
