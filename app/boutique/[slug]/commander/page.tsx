@@ -138,22 +138,29 @@ export default function CommanderPage() {
   }
 
   var paymentModes = [
-    { id: 'wave', label: 'Wave', icon: '🌊', desc: 'Paiement mobile Wave', always: true },
-    { id: 'orange_money', label: 'Orange Money', icon: '🟠', desc: 'Paiement Orange Money', needsAddon: 'cinetpay' },
-    { id: 'mtn_momo', label: 'MTN MoMo', icon: '🟡', desc: 'Paiement MTN Mobile Money', needsAddon: 'cinetpay' },
-    { id: 'cb', label: 'Carte bancaire', icon: '💳', desc: 'Visa / Mastercard', needsAddon: 'stripe' },
+    { id: 'wave', label: 'Wave', icon: '🌊', desc: 'Paiement mobile Wave' },
+    { id: 'orange_money', label: 'Orange Money', icon: '🟠', desc: 'Paiement Orange Money' },
+    { id: 'mtn_momo', label: 'MTN MoMo', icon: '🟡', desc: 'Paiement MTN Mobile Money' },
+    { id: 'cb', label: 'Carte bancaire', icon: '💳', desc: 'Visa / Mastercard' },
   ]
 
   var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
 
+  var plan = shop?.plan || 'starter'
+
   var availableModes = paymentModes.filter(function(m) {
-    if (m.always) return true
-    if (m.needsAddon) return hasAddon(m.needsAddon)
+    if (m.id === 'wave') return true
+    if (m.id === 'orange_money' || m.id === 'mtn_momo') {
+      return plan === 'pro' || plan === 'premium' || hasAddon('cinetpay')
+    }
+    if (m.id === 'cb') {
+      return plan === 'premium' || hasAddon('stripe')
+    }
     return false
   })
 
   if (form.delivery === 'retrait') {
-    availableModes.push({ id: 'especes', label: 'Especes a la boutique', icon: '💵', desc: 'Payez en especes au retrait', always: true })
+    availableModes.push({ id: 'especes', label: 'Especes a la boutique', icon: '💵', desc: 'Payez en especes au retrait' })
   }
 
   var getPaymentInstructions = function() {
@@ -164,7 +171,7 @@ export default function CommanderPage() {
       return { title: 'Paiement Orange Money', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero Orange Money :', number: shop?.orange_number || shop?.phone, steps: ['Tapez #144#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
     }
     if (paymentMode === 'mtn_momo') {
-      return { title: 'Paiement MTN MoMo', insuctions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
+      return { title: 'Paiement MTN MoMo', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
     }
     if (paymentMode === 'especes') {
       return { title: 'Paiement en especes', instructions: 'Payez ' + formatPrice(confirmation?.total || 0) + ' au retrait de votre commande.', number: null, steps: ['Rendez-vous a la boutique', 'Presentez le numero de commande', 'Payez en especes'] }

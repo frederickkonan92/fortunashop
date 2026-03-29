@@ -281,7 +281,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
       {/* FOOTER */}
       <footer className="bg-fs-cream2 border-t border-fs-border py-5 text-center">
         <p className="text-sm text-fs-gray">
-          Propulsé par <strong className="text-fs-orange">fortunashop</strong>
+          Propulsé par <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer" className="text-fs-orange font-bold hover:underline">fortunashop</a>
         </p>
       </footer>
 
