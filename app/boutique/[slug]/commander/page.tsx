@@ -6,6 +6,7 @@ import { formatPrice } from '@/lib/utils'
 import { useCart } from '@/components/cart'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function CommanderPage() {
   var params = useParams()
@@ -320,7 +321,7 @@ export default function CommanderPage() {
               {/* Image du produit */}
               <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-fs-border">
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
+                  <Image src={item.image_url} alt={item.name} width={48} height={48} className="w-full h-full" style={{ objectFit: 'contain' }} />
                 ) : (
                   <span className="text-xl">🛍️</span>
                 )}

@@ -14,12 +14,14 @@ const dmSans = DM_Sans({
 })
 
 export const metadata = {
-  title: 'fortunashop — Votre boutique professionnelle en ligne en 7 jours',
-  description: 'Votre boutique en ligne, livrée en 7 jours.',
+  title: 'fortunashop — Votre boutique en ligne en 7 jours',
+  description: 'Créez votre boutique en ligne professionnelle en 7 jours. Paiement Wave, Orange Money, MTN MoMo. Pour artisans et commerçants en Côte d\'Ivoire.',
   openGraph: {
-    title: 'fortunashop — Votre boutique professionnelle en ligne en 7 jours',
-    description: 'Boutique en ligne pour artisans. Commandez en quelques secondes.',
+    title: 'fortunashop — Votre boutique en ligne en 7 jours',
+    description: 'Créez votre boutique en ligne professionnelle en 7 jours. Paiement Wave, Orange Money, MTN MoMo.',
     type: 'website',
+    url: 'https://fortunashop.fr',
+    siteName: 'fortunashop',
   },
   icons: {
     // Favicon local dans /public/ — toujours disponible même serveur fermé

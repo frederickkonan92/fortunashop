@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 export default function LandingPage() {
   var [faqOpen, setFaqOpen] = useState<number | null>(null)
@@ -22,6 +23,7 @@ export default function LandingPage() {
     if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
   var [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  var [notifLink, setNotifLink] = useState<string | null>(null)
   var [formLoading, setFormLoading] = useState(false)
   var whatsappBase = 'https://wa.me/33664765696'
   var demoUrl = '/boutique/kente-fashion-test'
@@ -91,22 +93,16 @@ export default function LandingPage() {
   ]
 
   var addons = [
-    { icon: '🔗', name: 'Lien livraison livreur', desc: 'Votre livreur confirme la livraison en 1 clic depuis WhatsApp. Client notifié en temps réel.', price: '10 000 FCFA', type: '/mois', plans: 'Starter' },
-    { icon: '📋', name: 'Pack Pilotage — Dashboard', desc: 'CA en temps réel, top produits, panier moyen, export CSV. Pilotez votre business comme un pro.', price: '15 000 FCFA', type: '/mois', plans: 'Starter' },
-    { icon: '📈', name: 'Gestion des stocks', desc: 'Alertes stock bas, désactivation auto des produits épuisés, historique et stock tampon physique.', price: '10 000 FCFA', type: '/mois', plans: 'Starter · Pro' },
-    { icon: '📦', name: 'Bundle Stocks + Dashboard', desc: 'Gérez vos stocks et pilotez votre business efficacement. Les deux outils réunis à prix réduit.', price: '20 000 FCFA', type: '/mois', plans: 'Starter' },
+    { icon: '🚀', name: 'Kit Migration Communauté', desc: 'Message WhatsApp personnalisé, 3 visuels Instagram, bios optimisées, script lancement et 1h coaching.', price: '25 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
     { icon: '💳', name: 'Mobile Money complet', desc: 'Orange Money, MTN MoMo & Moov via CinetPay. Accès immédiat à tous les paiements mobile CI.', price: '75 000 FCFA', type: 'setup unique', plans: 'Starter' },
     { icon: '🌍', name: 'CB internationale Stripe', desc: 'Visa & Mastercard pour la diaspora et clients internationaux. Inclut accompagnement KYC.', price: '90 000 FCFA', type: 'setup unique', plans: 'Starter · Pro' },
-    { icon: '📊', name: 'Rapport + recommandations IA', desc: 'Rapport mensuel des KPI business et recommandations stratégiques pour améliorer votre pilotage.', price: '10 000 FCFA', type: '/mois', plans: 'Starter · Pro' },
-    { icon: '🚗', name: 'Intégration Yango/Uber', desc: 'Dispatch automatique du livreur. Suivi temps réel pour vous et votre client.', price: '75 000 + 10 000 FCFA', type: 'setup + /mois', plans: 'Tous plans' },
-    { icon: '🛒', name: 'Produit supplémentaire', desc: 'Ajout d\'un produit hors forfait. Idéal pour les catalogues en croissance.', price: '10 000 FCFA', type: '/produit', plans: 'Starter · Pro' },
-    { icon: '🌐', name: 'Multilingue', desc: 'Site en Français + Anglais. Idéal pour toucher la diaspora internationale.', price: '20 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
-    { icon: '🎓', name: 'Formation extra', desc: 'Accompagnement personnalisé en présentiel ou visio pour maîtriser votre boutique.', price: '10 000 FCFA', type: '/heure', plans: 'Tous plans' },
-    { icon: '⭐', name: "Système d'avis clients", desc: "Avis vérifiés sur chaque produit. Augmente la confiance et la conversion.", price: '20 000 FCFA', type: 'setup unique', plans: 'Starter' },
+    { icon: '📊', name: 'Pack Analytics', desc: 'Dashboard CA en temps réel, top produits, panier moyen, export CSV + recommandations IA mensuelles.', price: '20 000 FCFA', type: '/mois', plans: 'Starter · Pro' },
+    { icon: '📈', name: 'Gestion des stocks', desc: 'Alertes stock bas, désactivation auto des produits épuisés, historique et stock tampon physique.', price: '10 000 FCFA', type: '/mois', plans: 'Starter · Pro' },
     { icon: '🏷️', name: 'Codes promo & réductions', desc: 'Créez des codes promo pour fidéliser et relancer vos clients.', price: '20 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
-    { icon: '🔔', name: 'Relance panier abandonné', desc: "Message WhatsApp auto aux clients qui n'ont pas finalisé leur commande.", price: '35 000 FCFA', type: 'setup unique', plans: 'Starter · Pro' },
+    { icon: '🔗', name: 'Lien livraison livreur', desc: 'Le livreur confirme la remise en 1 clic. Le client est notifié automatiquement en temps réel.', price: '10 000 FCFA', type: '/mois', plans: 'Starter' },
     { icon: '🎯', name: 'Bannière promo dynamique', desc: 'Bandeau personnalisable en haut de boutique avec offre spéciale ou compte à rebours.', price: '15 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
-    { icon: '🚀', name: 'Kit Migration communauté', desc: 'Message WhatsApp, visuels Instagram, bios optimisées, script de lancement, 1h coaching.', price: '25 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
+    { icon: '🚗', name: 'Intégration Yango', desc: 'Dispatch automatique du livreur via Yango. Suivi temps réel pour vous et votre client. Bientôt disponible.', price: '75 000 + 10 000 FCFA', type: 'setup + /mois', plans: 'Tous plans' },
+    { icon: '🌐', name: 'Domaine personnalisé', desc: 'Votre boutique sur votre propre nom de domaine (maboutique.ci ou .com). Inclut configuration DNS.', price: '50 000 + 5 000 FCFA', type: 'setup + /mois', plans: 'Pro · Premium' },
   ]
 
   var faqs = [
@@ -137,6 +133,22 @@ export default function LandingPage() {
       'Add-ons : ' + (selectedAddons.length > 0 ? selectedAddons.join(', ') : 'Aucun') + '\n' +
       'Lien social : ' + (formData.lien_social || 'Non renseigné')
     )
+    var res = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nom: formData.nom,
+        whatsapp: formData.whatsapp,
+        activite: formData.activite,
+        plan: formData.plan,
+        lien_social: formData.lien_social,
+        addons: selectedAddons,
+      })
+    })
+    var result = await res.json()
+    if (result.success && result.notifLink) {
+      setNotifLink(result.notifLink)
+    }
     setFormStatus('success')
     setFormLoading(false)
     setTimeout(function() {
@@ -497,6 +509,12 @@ export default function LandingPage() {
               {formStatus === 'success' ? (
                 <div className="fade-in" style={{ background: 'rgba(76,175,80,0.1)', color: '#4CAF50', borderRadius: 12, padding: 24, textAlign: 'center', fontWeight: 700, fontSize: 16 }}>
                   ✅ Demande envoyée ! On vous contacte sur WhatsApp sous 24h.
+                  {notifLink && (
+                    <a href={notifLink} target="_blank" rel="noopener noreferrer"
+                       style={{ display: 'block', background: '#25D366', color: 'white', fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 16, padding: '14px 24px', borderRadius: 12, textAlign: 'center', textDecoration: 'none', marginTop: 16 }}>
+                      📱 Confirmer sur WhatsApp
+                    </a>
+                  )}
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -545,6 +563,24 @@ export default function LandingPage() {
                            placeholder="https://instagram.com/votre-page"
                            style={{ width: '100%', padding: '12px 16px', border: '2px solid rgba(220,80,20,0.12)', borderRadius: 10, fontFamily: 'Lato, sans-serif', fontSize: 15, background: 'white', color: '#2C1A0E', outline: 'none', minHeight: 44 }} />
                   </div>
+                  {selectedAddons.length > 0 && (
+                    <div style={{ background: '#FFF0E6', borderRadius: 12, padding: 16, marginBottom: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: '#2C1A0E' }}>
+                        Add-ons sélectionnés ({selectedAddons.length})
+                      </p>
+                      {selectedAddons.map(function(addon) {
+                        return (
+                          <div key={addon} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, color: '#7C6C58', marginBottom: 4 }}>
+                            <span>{addon}</span>
+                            <button type="button" onClick={function() { toggleAddon(addon) }}
+                              style={{ background: 'none', border: 'none', color: '#DC5014', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
+                              Retirer
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                   <button type="submit" disabled={formLoading}
                           style={{ background: '#DC5014', color: 'white', fontFamily: 'Nunito, sans-serif', fontWeight: 800, fontSize: 17, padding: 16, borderRadius: 12, border: 'none', cursor: 'pointer', opacity: formLoading ? 0.7 : 1, transition: 'all 0.2s' }}>
                     {formLoading ? 'Envoi...' : 'Envoyer ma demande'}

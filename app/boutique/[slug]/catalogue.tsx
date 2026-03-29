@@ -6,6 +6,7 @@ import { formatPrice } from '@/lib/utils'
 import PageTracker from '@/components/tracker'
 import { useCart, CartBar } from '@/components/cart'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function CatalogueClient({ slug }: { slug: string }) {
   const [shop, setShop] = useState<any>(null)
@@ -107,7 +108,7 @@ export default function CatalogueClient({ slug }: { slug: string }) {
                 <a href={'/boutique/' + shop.slug + '/produit/' + product.id} className="block">
                   <div className="aspect-square bg-fs-cream flex items-center justify-center">
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
+                      <Image src={product.image_url} alt={product.name} width={300} height={300} className="w-full h-full" style={{ objectFit: 'contain' }} loading="lazy" />
                     ) : (
                       <span className="text-5xl">🛍️</span>
                     )}

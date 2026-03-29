@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import AdminNav from '../nav'
+import OnboardingWizard from '@/components/onboarding'
 
 // Composant recommandations IA — appelle Claude Haiku via /api/recommendations
 function AIRecommendations({ shopId }: { shopId: string }) {
@@ -139,6 +140,11 @@ export default function DashboardPage() {
         <div className="animate-spin w-8 h-8 border-4 border-fs-orange border-t-transparent rounded-full" />
       </div>
     )
+  }
+
+  // Si l'onboarding n'est pas terminé, afficher le wizard
+  if (shop && shop.onboarding_completed === false) {
+    return <OnboardingWizard shop={shop} />
   }
 
   if (!hasAddon('dashboard')) {
