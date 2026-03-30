@@ -6,7 +6,6 @@ import { formatPrice } from '@/lib/utils'
 import { useCart } from '@/components/cart'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import PageTracker from '@/components/tracker'
 
 // GaleriePhotos : affiche la photo principale + miniatures cliquables
@@ -16,8 +15,7 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
     <div>
       {/* Photo principale — object-contain pour voir l'article entier */}
       <div className="w-full h-80 bg-white flex items-center justify-center overflow-hidden">
-        <Image src={photos[selected]} alt={productName}
-             width={600} height={600} className="w-full h-full" style={{ objectFit: 'contain' }} priority />
+        <img src={photos[selected]} alt={productName} className="w-full h-full object-contain" />
       </div>
       {/* Miniatures — affichées seulement s'il y a plus d'une photo */}
       {photos.length > 1 && (
@@ -28,7 +26,7 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
                       className={'rounded-lg overflow-hidden border-2 transition ' +
                         (selected === i ? 'border-fs-orange' : 'border-transparent')}>
                 {/* Miniature 60x60 */}
-                <Image src={url} alt={productName + ' ' + (i + 1)} width={64} height={64} className="w-16 h-16" style={{ objectFit: 'cover' }} loading="lazy" />
+                <img src={url} alt={productName + ' ' + (i + 1)} className="w-16 h-16 object-cover" loading="lazy" />
               </button>
             )
           })}
