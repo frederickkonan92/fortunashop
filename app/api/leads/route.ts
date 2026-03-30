@@ -55,6 +55,23 @@ export async function POST(request: Request) {
     // Log dans la console Vercel (backup)
     console.log('📧 NOUVEAU LEAD:', body.nom, body.whatsapp, body.plan, addonsText)
 
+    // Envoie l'email de notification via Brevo (en arrière-plan)
+    // On n'attend pas la réponse pour ne pas bloquer le formulaire
+    fetch(new URL('/api/send-lead-email', request.url).toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nom: body.nom,
+        whatsapp: body.whatsapp,
+        activite: body.activite,
+        plan: body.plan,
+        lien_social: body.lien_social,
+        addons: body.addons,
+      })
+    }).catch(function(err) {
+      console.error('Erreur appel email:', err)
+    })
+
     return NextResponse.json({
       success: true,
       leadId: data.id,
