@@ -28,10 +28,10 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         sender: {
           name: 'fortunashop',
-          email: 'contact@fortunashop.fr',
+          email: 'support@fortunashop.fr',
         },
         to: [
-          { email: 'contact@fortunashop.fr', name: 'Frédérick' },
+          { email: 'support@fortunashop.fr', name: 'Frédérick' },
         ],
         subject: 'Nouveau lead fortunashop — ' + body.nom + ' (' + (body.plan || 'Non précisé') + ')',
         htmlContent: '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">'
