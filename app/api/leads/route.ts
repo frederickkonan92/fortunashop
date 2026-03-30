@@ -40,14 +40,14 @@ export async function POST(request: Request) {
       ? body.addons.join(', ')
       : 'Aucun'
 
-    var notifMessage = '🔔 NOUVEAU LEAD fortunashop !\n\n'
-      + '👤 ' + body.nom + '\n'
-      + '📱 ' + body.whatsapp + '\n'
-      + '🏪 ' + (body.activite || 'Non précisé') + '\n'
-      + '📋 Plan : ' + (body.plan || 'Non choisi') + '\n'
-      + '🔗 ' + (body.lien_social || 'Pas de lien') + '\n'
-      + '➕ Add-ons : ' + addonsText + '\n\n'
-      + '⏰ ' + new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan' })
+    var notifMessage = 'NOUVEAU LEAD fortunashop !\n\n'
+      + 'Nom : ' + body.nom + '\n'
+      + 'Tel : ' + body.whatsapp + '\n'
+      + 'Activite : ' + (body.activite || 'Non precis') + '\n'
+      + 'Plan : ' + (body.plan || 'Non choisi') + '\n'
+      + 'Lien : ' + (body.lien_social || 'Pas de lien') + '\n'
+      + 'Add-ons : ' + addonsText + '\n\n'
+      + new Date().toLocaleString('fr-FR', { timeZone: 'Africa/Abidjan' })
 
     // Génère le lien WhatsApp de notification
     var notifLink = 'https://wa.me/' + NOTIFY_PHONE + '?text=' + encodeURIComponent(notifMessage)
