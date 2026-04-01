@@ -1,7 +1,27 @@
-/** Règles plan / add-ons pour les modes de paiement checkout (aligné commander) */
+/** Règles plan / add-ons (checkout, dashboard, admin produits) */
 
 export function hasAddon(addons: string[] | null | undefined, addon: string): boolean {
   return !!(addons && addons.indexOf(addon) !== -1)
+}
+
+export function isProPlan(plan: string | undefined): boolean {
+  var p = plan || 'starter'
+  return p === 'pro' || p === 'premium'
+}
+
+export function isPremiumPlan(plan: string | undefined): boolean {
+  return (plan || 'starter') === 'premium'
+}
+
+var PRODUCT_LIMITS: any = { starter: 20, pro: 50, premium: 999999 }
+var CATALOG_EDIT_LIMITS: any = { starter: 10, pro: 25, premium: 999999 }
+
+export function getMaxProductsForPlan(plan: string | undefined): number {
+  return PRODUCT_LIMITS[plan || 'starter'] || 20
+}
+
+export function getMaxCatalogEditsForPlan(plan: string | undefined): number {
+  return CATALOG_EDIT_LIMITS[plan || 'starter'] || 10
 }
 
 /**

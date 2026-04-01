@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import { useCart } from '@/components/cart'
@@ -14,8 +15,15 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
   return (
     <div>
       {/* Photo principale — object-contain pour voir l'article entier */}
-      <div className="w-full h-80 bg-white flex items-center justify-center overflow-hidden">
-        <img src={photos[selected]} alt={productName} className="w-full h-full object-contain" />
+      <div className="w-full h-80 bg-white relative flex items-center justify-center overflow-hidden">
+        <Image
+          src={photos[selected]}
+          alt={productName}
+          fill
+          className="object-contain"
+          sizes="100vw"
+          priority
+        />
       </div>
       {/* Miniatures — affichées seulement s'il y a plus d'une photo */}
       {photos.length > 1 && (
@@ -23,10 +31,9 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
           {photos.map(function(url, i) {
             return (
               <button key={i} onClick={function() { setSelected(i) }}
-                      className={'rounded-lg overflow-hidden border-2 transition ' +
+                      className={'relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition ' +
                         (selected === i ? 'border-fs-orange' : 'border-transparent')}>
-                {/* Miniature 60x60 */}
-                <img src={url} alt={productName + ' ' + (i + 1)} className="w-16 h-16 object-cover" loading="lazy" />
+                <Image src={url} alt={productName + ' ' + (i + 1)} fill className="object-cover" sizes="64px" />
               </button>
             )
           })}

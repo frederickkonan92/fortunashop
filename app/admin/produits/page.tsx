@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import { hasAddon, getMaxProductsForPlan, getMaxCatalogEditsForPlan } from '@/lib/plan-rules'
 import AdminNav from '../nav'
 
 export default function ProduitsPage() {
@@ -25,6 +27,7 @@ export default function ProduitsPage() {
 var [hasVariants, setHasVariants] = useState(false)
 var [variants, setVariants] = useState<any[]>([])
 var [variantType, setVariantType] = useState('custom')
+var [monthEdits, setMonthEdits] = useState(0)
 
 var VARIANT_PRESETS: any = {
   size_clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -72,12 +75,8 @@ var updateVariant = function(index: number, field: string, value: string) {
     }
   }
 
-  var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
-  var planLimits: any = { starter: 20, pro: 50, premium: 999999 }
-  var editLimits: any = { starter: 10, pro: 25, premium: 999999 }
-  var maxEdits = editLimits[shop?.plan || 'starter'] || 10
-  var [monthEdits, setMonthEdits] = useState(0)
-  var maxProducts = planLimits[shop?.plan || "starter"] || 20
+  var maxEdits = getMaxCatalogEditsForPlan(shop?.plan)
+  var maxProducts = getMaxProductsForPlan(shop?.plan)
   var canAddProduct = products.length < maxProducts
   var canEdit = shop?.plan === 'premium' || monthEdits < maxEdits
 
@@ -174,7 +173,7 @@ var startEdit = async function(product: any) {
       image_url_3: imageUrl3,
       shop_id: shop.id,
     }
-    if (hasAddon('stock')) {
+    if (hasAddon(shop?.addons, 'stock')) {
       var bufferQty = parseInt(form.stock_buffer) || 0
       // Stock disponible en ligne = stock total - tampon physique
       var stockOnline = stockQty != null ? Math.max(0, stockQty - bufferQty) : null
@@ -310,7 +309,7 @@ var startEdit = async function(product: any) {
                           className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange resize-none"
                           placeholder="Ex : Fait main, taille ajustable" />
               </div>
-             {hasAddon('stock') && (
+             {hasAddon(shop?.addons, 'stock') && (
                 <div className="bg-fs-cream rounded-xl p-4 space-y-3">
                   <p className="text-xs font-bold text-fs-gray">📦 Gestion du stock</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -360,8 +359,18 @@ var startEdit = async function(product: any) {
                              className="w-full text-sm text-fs-gray file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-fs-orange-pale file:text-fs-orange hover:file:bg-fs-orange hover:file:text-white file:transition file:cursor-pointer" />
                       {/* Aperçu de la photo si déjà uploadée ou sélectionnée */}
                       {imagePreviews[index] && (
-                        <div className="mt-2 rounded-xl overflow-hidden border border-fs-border">
-                          <img src={imagePreviews[index]!} alt={'Photo ' + (index + 1)} className="w-full h-32 object-cover" />
+                        <div className="mt-2 rounded-xl overflow-hidden border border-fs-border relative h-32 bg-fs-cream">
+                          {imagePreviews[index]!.indexOf('data:') === 0 ? (
+                            <img src={imagePreviews[index]!} alt={'Photo ' + (index + 1)} className="w-full h-32 object-cover" />
+                          ) : (
+                            <Image
+                              src={imagePreviews[index]!}
+                              alt={'Photo ' + (index + 1)}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, 400px"
+                            />
+                          )}
                         </div>
                       )}
                     </div>
@@ -499,9 +508,9 @@ var startEdit = async function(product: any) {
           return (
             <div key={product.id}
                  className={'bg-white rounded-2xl border border-fs-border p-4 flex gap-4' + (!product.is_active ? ' opacity-50' : '')}>
-              <div className="w-16 h-16 rounded-xl bg-fs-cream flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="w-16 h-16 rounded-xl bg-fs-cream flex items-center justify-center shrink-0 overflow-hidden relative">
                 {product.image_url ? (
-                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                  <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="64px" />
                 ) : (
                   <span className="text-2xl">📦</span>
                 )}
@@ -513,9 +522,9 @@ var startEdit = async function(product: any) {
                     {formatPrice(product.price)}
                   </span>
                 </div>
-                {hasAddon('stock') && product.stock_quantity != null && (
+                {hasAddon(shop?.addons, 'stock') && product.stock_quantity != null && (
                   <div className="mb-2">
-                    <div className="flex ims-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1">
                       <span className={'text-[11px] font-bold px-2 py-0.5 rounded-full ' + stockColors[status]}>
                         {status === 'out' ? 'Rupture' : status === 'low' ? 'Stock bas' : product.stock_quantity + ' en stock'}
                       </span>

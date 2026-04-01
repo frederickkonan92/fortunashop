@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import { isCheckoutPaymentModeAllowed } from '@/lib/plan-rules'
@@ -308,9 +309,9 @@ export default function CommanderPage() {
           return (
             <div key={item.id} className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3">
               {/* Image du produit */}
-              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-fs-border">
+              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-fs-border relative">
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
+                  <Image src={item.image_url} alt={item.name} fill className="object-contain" sizes="48px" />
                 ) : (
                   <span className="text-xl">🛍️</span>
                 )}

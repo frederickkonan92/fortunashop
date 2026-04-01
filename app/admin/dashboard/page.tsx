@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import { hasAddon, isProPlan, isPremiumPlan } from '@/lib/plan-rules'
 import AdminNav from '../nav'
 
 var OnboardingWizard = dynamic(function() {
@@ -52,10 +53,6 @@ export default function DashboardPage() {
     }
     setLoading(false)
   }
-
-  var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
-  var isPro = function() { return shop?.plan === 'pro' || shop?.plan === 'premium' }
-  var isPremium = function() { return shop?.plan === 'premium' }
 
   if (loading) {
     console.log('RETURN ANTICIPÉ ICI - raison: loading est true, données pas encore chargées')
@@ -153,7 +150,7 @@ export default function DashboardPage() {
       })
     }
   })
-  if (hasAddon('stock')) {
+  if (hasAddon(shop?.addons, 'stock')) {
     filteredPhysical.forEach(function(sale: any) {
       if (!productSales[sale.product_name]) {
         productSales[sale.product_name] = { name: sale.product_name, qtyOnline: 0, qtyPhysical: 0, revenue: 0 }
@@ -233,13 +230,13 @@ export default function DashboardPage() {
                   className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'ventes' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
             Ventes
           </button>
-          {isPro() && (
+          {isProPlan(shop?.plan) && (
             <button onClick={function() { setTab('analytics') }}
                     className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'analytics' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
               Analytics
             </button>
           )}
-          {isPremium() && (
+          {isPremiumPlan(shop?.plan) && (
             <button onClick={function() { setTab('prevision') }}
                     className={'px-4 py-2 rounded-full text-xs font-bold transition ' + (tab === 'prevision' ? 'bg-fs-ink text-white' : 'bg-white text-fs-gray border border-fs-border')}>
               Prévision
@@ -278,7 +275,7 @@ export default function DashboardPage() {
                     <p className="font-nunito font-extrabold text-sm text-fs-ink">{formatPrice(caOnline)}</p>
                   </div>
                 </div>
-                {hasAddon('stock') && (
+                {hasAddon(shop?.addons, 'stock') && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-fs-ink shrink-0" />
                     <div>
@@ -321,7 +318,7 @@ export default function DashboardPage() {
               </div>
 
               {/* PANIER MOYEN — Pro+ */}
-              {isPro() && (
+              {isProPlan(shop?.plan) && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Panier moyen</p>
                   <p className="font-nunito font-extrabold text-lg">{formatPrice(panierMoyen)}</p>
@@ -330,7 +327,7 @@ export default function DashboardPage() {
               )}
 
               {/* VENTES PHYSIQUES — si addon stock */}
-              {hasAddon('stock') && (
+                      {hasAddon(shop?.addons, 'stock') && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Ventes physiques</p>
                   <p className="font-nunito font-extrabold text-lg">{filteredPhysical.length}</p>
@@ -339,7 +336,7 @@ export default function DashboardPage() {
               )}
 
               {/* PIC COMMANDES — Pro+ */}
-              {isPro() && (
+              {isProPlan(shop?.plan) && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Pic commandes</p>
                   <p className="font-nunito font-extrabold text-sm">⏰ {bestHourLabel}</p>
@@ -428,7 +425,7 @@ export default function DashboardPage() {
                         <span className="w-1.5 h-1.5 rounded-full bg-fs-orange" />
                         <span className="text-xs text-fs-gray">En ligne : {p.qtyOnline}</span>
                       </div>
-                      {hasAddon('stock') && (
+                      {hasAddon(shop?.addons, 'stock') && (
                         <div className="flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-fs-ink" />
                           <span className="text-xs text-fs-gray">Physique : {p.qtyPhysical}</span>
@@ -442,7 +439,7 @@ export default function DashboardPage() {
             </div>
 
             {/* UPSELL VERS PRO — Starter uniquement */}
-            {!isPro() && (
+            {!isProPlan(shop?.plan) && (
               <div className="bg-fs-orange-pale border border-fs-orange rounded-2xl p-4 text-center">
                 <p className="text-sm font-bold text-fs-orange mb-1">📈 Passez en Pro</p>
                 <p className="text-xs text-fs-gray">Débloquez : panier moyen, pic de commandes, analytics visiteurs et taux de conversion.</p>
@@ -454,7 +451,7 @@ export default function DashboardPage() {
         {/* ═══════════════════════════════════════════════
             ONGLET ANALYTICS — PRO + PREMIUM uniquement
         ═══════════════════════════════════════════════ */}
-        {tab === 'analytics' && isPro() && (
+        {tab === 'analytics' && isProPlan(shop?.plan) && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white border border-fs-border rounded-2xl p-4">
@@ -520,7 +517,7 @@ export default function DashboardPage() {
         {/* ═══════════════════════════════════════════════
             ONGLET PRÉVISION — PREMIUM uniquement
         ═══════════════════════════════════════════════ */}
-        {tab === 'prevision' && isPremium() && (
+        {tab === 'prevision' && isPremiumPlan(shop?.plan) && (
           <div className="space-y-4">
             {/* PRÉVISION CA */}
             <div className="bg-white border border-fs-border rounded-2xl p-4">
