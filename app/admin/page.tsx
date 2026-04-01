@@ -72,7 +72,7 @@ export default function AdminPage() {
     var baseUrl = window.location.origin
     var confirmLink = ''
     if (shop?.addons?.includes('livreur_link')) {
-      var token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+      var token = crypto.randomUUID() + '-' + Date.now().toString(36)
       await supabase.from('delivery_tokens').insert({ order_id: order.id, token: token })
       confirmLink = '\n\nConfirmer livraison ici :\n' + baseUrl + '/livraison?token=' + token
     }

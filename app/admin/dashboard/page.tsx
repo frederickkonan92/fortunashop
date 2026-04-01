@@ -151,23 +151,6 @@ export default function DashboardPage() {
     return <OnboardingWizard shop={shop} />
   }
 
-  if (!hasAddon('dashboard')) {
-    return (
-      <div className="min-h-screen bg-fs-cream">
-        <header className="bg-fs-ink text-white px-4 py-4 sticky top-0 z-50">
-          <div className="max-w-lg mx-auto"><h1 className="font-nunito font-black text-base">Dashboard</h1></div>
-        </header>
-        <AdminNav shopSlug={shop?.slug} />
-        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-          <p className="text-5xl mb-4">📊</p>
-          <h2 className="font-nunito font-extrabold text-lg mb-2">Pack Pilotage</h2>
-          <p className="text-fs-gray mb-6 text-sm">CA en temps réel, top produits, analytics. Disponible en add-on.</p>
-          <p className="font-nunito font-extrabold text-fs-orange text-lg">15 000 FCFA /mois</p>
-        </div>
-      </div>
-    )
-  }
-
   // ── PÉRIODE ──────────────────────────────────────────
   var now = new Date()
   var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)

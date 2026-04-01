@@ -102,7 +102,7 @@ export default function CommanderPage() {
           }
 
           // Récupère les infos complètes du produit pour vérifier le seuil
-          var prodCheck = await supabase.from('products').select('*').eq('id', item.id).single()
+          var prodCheck = await supabase.from('products').select('*').eq('id', realId).single()
           if (prodCheck.data && shop?.phone) {
             var p = prodCheck.data
             var onlineStock = Math.max(0, p.stock_quantity - (p.stock_buffer || 0))
