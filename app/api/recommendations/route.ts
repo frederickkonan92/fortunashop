@@ -21,12 +21,12 @@ function getAnthropic() {
 
 export async function POST(req: NextRequest) {
   try {
-    var supabase = getSupabaseAdmin()
-    var anthropic = getAnthropic()
-
     var body = await req.json()
     var shopId = body.shop_id
     if (!shopId) return NextResponse.json({ error: 'shop_id manquant' }, { status: 400 })
+
+    var supabase = getSupabaseAdmin()
+    var anthropic = getAnthropic()
 
     // Vérifie si les recommandations ont moins de 24h
     var existing = await supabase

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import AdminNav from './nav'
@@ -29,28 +29,61 @@ export default function AdminPage() {
   var [lastCount, setLastCount] = useState(0)
   var [notifPermission, setNotifPermission] = useState('default')
 
+  var loadData = async function() {
+    var userRes = await supabase.auth.getUser()
+    var user = userRes.data.user
+    if (!user) return
+    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    setShop(shopRes.data)
+    if (shopRes.data) {
+      var ordersRes = await supabase.from('orders').select('*, order_items(*)')
+        .eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
+      setOrders(ordersRes.data || [])
+    }
+    setLoading(false)
+  }
+
+  var loadDataRef = useRef(loadData)
+  loadDataRef.current = loadData
+
   useEffect(function() {
     loadData()
     if (typeof Notification !== 'undefined') {
       setNotifPermission(Notification.permission)
     }
-    var interval: ReturnType<typeof setInterval> | null = null
-    function tick() {
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
-      loadData()
-    }
-    interval = setInterval(tick, 30000)
     function onVisibilityChange() {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        loadData()
+        loadDataRef.current()
       }
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
     return function() {
-      if (interval) clearInterval(interval)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
+
+  // Temps réel Supabase sur les commandes (remplace le polling). Requis côté projet : Publication Realtime activée pour la table `orders` (Dashboard Supabase → Database → Publications).
+  useEffect(function() {
+    if (!shop?.id) return
+    var channel = supabase
+      .channel('admin-orders-' + shop.id)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: 'shop_id=eq.' + shop.id,
+        },
+        function() {
+          loadDataRef.current()
+        }
+      )
+      .subscribe()
+    return function() {
+      supabase.removeChannel(channel)
+    }
+  }, [shop?.id])
 
   useEffect(function() {
     if (lastCount > 0 && orders.length > lastCount) {
@@ -71,20 +104,6 @@ export default function AdminPage() {
         setNotifPermission(result)
       })
     }
-  }
-
-  var loadData = async function() {
-    var userRes = await supabase.auth.getUser()
-    var user = userRes.data.user
-    if (!user) return
-    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
-    setShop(shopRes.data)
-    if (shopRes.data) {
-      var ordersRes = await supabase.from('orders').select('*, order_items(*)')
-        .eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
-      setOrders(ordersRes.data || [])
-    }
-    setLoading(false)
   }
 
   var updateStatus = async function(orderId: string, newStatus: string) {

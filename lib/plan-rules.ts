@@ -1,4 +1,22 @@
-/** Règles plan / add-ons (checkout, dashboard, admin produits) */
+/** Règles plan / add-ons (checkout, dashboard, admin produits, landing) */
+
+/** Frais de setup unique affichés sur la landing et docs */
+export var PRICING_SETUP_FCFA = 100000
+
+export type PlanKey = 'starter' | 'pro' | 'premium'
+
+/**
+ * Abonnement : mensuel, équivalent mensuel si paiement annuel (10 mois payés),
+ * économie annuelle vs 12 × mensuel (aligné CLAUDE.md / landing).
+ */
+export var PLAN_SUBSCRIPTION_PRICING: Record<
+  PlanKey,
+  { monthly: number; annualMonthlyEquivalent: number; savingsYearVsMonthly: number }
+> = {
+  starter: { monthly: 35000, annualMonthlyEquivalent: 29167, savingsYearVsMonthly: 70000 },
+  pro: { monthly: 55000, annualMonthlyEquivalent: 45833, savingsYearVsMonthly: 110000 },
+  premium: { monthly: 85000, annualMonthlyEquivalent: 70833, savingsYearVsMonthly: 170000 },
+}
 
 export function hasAddon(addons: string[] | null | undefined, addon: string): boolean {
   return !!(addons && addons.indexOf(addon) !== -1)
