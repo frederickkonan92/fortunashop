@@ -1,9 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/utils'
+
+function isSuiviTerminal(status: string, deliveryMode: string) {
+  if (status === 'annulee') return true
+  if (deliveryMode === 'retrait' && status === 'prete') return true
+  if (deliveryMode !== 'retrait' && status === 'livree') return true
+  return false
+}
 
 export default function SuiviContent() {
   var searchParams = useSearchParams()
@@ -11,27 +18,76 @@ export default function SuiviContent() {
   var [order, setOrder] = useState<any>(null)
   var [shop, setShop] = useState<any>(null)
   var [loading, setLoading] = useState(true)
+  var intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(function() {
     if (!cmd) { setLoading(false); return }
-    loadOrder()
-    var interval = setInterval(loadOrder, 10000)
-    return function() { clearInterval(interval) }
-  }, [cmd])
 
-  var loadOrder = async function() {
-    var orderRes = await supabase
-      .from('orders').select('*, order_items(*)')
-      .eq('order_number', cmd).single()
-    if (orderRes.data) {
-      setOrder(orderRes.data)
-      var shopRes = await supabase
-        .from('shops').select('name, description')
-        .eq('id', orderRes.data.shop_id).single()
-      setShop(shopRes.data)
+    function clearPoll() {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
     }
-    setLoading(false)
-  }
+
+    var loadOrder = async function() {
+      var orderRes = await supabase
+        .from('orders')
+        .select('*, order_items(*), shops(name, description)')
+        .eq('order_number', cmd)
+        .maybeSingle()
+
+      if (orderRes.error) {
+        orderRes = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('order_number', cmd)
+          .maybeSingle()
+      }
+
+      if (orderRes.data) {
+        var row: any = orderRes.data
+        setOrder(row)
+        var emb = row.shops
+        if (emb && typeof emb === 'object' && !Array.isArray(emb)) {
+          setShop(emb)
+        } else if (Array.isArray(emb) && emb[0]) {
+          setShop(emb[0])
+        } else {
+          var shopRes = await supabase
+            .from('shops').select('name, description')
+            .eq('id', row.shop_id).single()
+          setShop(shopRes.data)
+        }
+        if (isSuiviTerminal(row.status, row.delivery_mode)) {
+          clearPoll()
+        }
+      } else {
+        setOrder(null)
+        setShop(null)
+      }
+      setLoading(false)
+    }
+
+    loadOrder()
+
+    intervalRef.current = setInterval(function() {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      loadOrder()
+    }, 30000)
+
+    function onVisibilityChange() {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadOrder()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return function() {
+      clearPoll()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [cmd])
 
   if (loading) {
     return (
@@ -80,6 +136,10 @@ export default function SuiviContent() {
   var items = (order.order_items || []).map(function(i: any) {
     return i.product_name + ' x' + i.quantity
   }).join(', ')
+
+  var pollHint = isSuiviTerminal(order.status, order.delivery_mode)
+    ? 'Statut final — plus de mise à jour automatique'
+    : 'Cette page se met à jour automatiquement toutes les 30 secondes (uniquement si l’onglet est visible)'
 
   return (
     <div className="min-h-screen bg-fs-cream">
@@ -151,7 +211,7 @@ export default function SuiviContent() {
         </div>
 
         <p className="text-center text-xs text-fs-gray2 mt-6">
-          Cette page se met à jour automatiquement toutes les 10 secondes
+          {pollHint}
         </p>
       </div>
     </div>

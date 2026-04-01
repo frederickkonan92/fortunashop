@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import { isCheckoutPaymentModeAllowed } from '@/lib/plan-rules'
 import { useCart } from '@/components/cart'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -144,19 +145,8 @@ export default function CommanderPage() {
     { id: 'cb', label: 'Carte bancaire', icon: '💳', desc: 'Visa / Mastercard' },
   ]
 
-  var hasAddon = function(addon: string) { return shop?.addons?.includes(addon) }
-
-  var plan = shop?.plan || 'starter'
-
   var availableModes = paymentModes.filter(function(m) {
-    if (m.id === 'wave') return true
-    if (m.id === 'orange_money' || m.id === 'mtn_momo') {
-      return plan === 'pro' || plan === 'premium' || hasAddon('cinetpay')
-    }
-    if (m.id === 'cb') {
-      return plan === 'premium' || hasAddon('stripe')
-    }
-    return false
+    return isCheckoutPaymentModeAllowed(m.id, shop?.plan, shop?.addons)
   })
 
   if (form.delivery === 'retrait') {

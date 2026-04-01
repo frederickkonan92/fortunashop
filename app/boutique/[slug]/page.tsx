@@ -1,6 +1,7 @@
 import CatalogueClient from './catalogue'
 import { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { fetchBoutiqueCatalog } from '@/lib/boutique-catalog'
 
 // Client Supabase côté serveur pour generateMetadata
 // On ne peut pas utiliser le client côté client ici car generateMetadata s'exécute sur le serveur
@@ -50,5 +51,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function BoutiquePage({ params }: any) {
   const { slug } = await params
-  return <CatalogueClient slug={slug} />
+  var { shop, products } = await fetchBoutiqueCatalog(supabaseServer, slug)
+  return <CatalogueClient slug={slug} initialShop={shop} initialProducts={products} />
 }

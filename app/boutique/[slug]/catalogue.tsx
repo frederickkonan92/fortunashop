@@ -1,45 +1,30 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import Image from 'next/image'
 import { formatPrice } from '@/lib/utils'
 import PageTracker from '@/components/tracker'
 import { useCart, CartBar } from '@/components/cart'
 import Link from 'next/link'
 
-export default function CatalogueClient({ slug }: { slug: string }) {
-  const [shop, setShop] = useState<any>(null)
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const cart = useCart()
-  const [variantPopup, setVariantPopup] = useState<any>(null)
-  const [selectedVariant, setSelectedVariant] = useState<any>(null)
+type CatalogueProps = {
+  slug: string
+  initialShop: any | null
+  initialProducts: any[]
+}
 
+export default function CatalogueClient({ slug, initialShop, initialProducts }: CatalogueProps) {
+  var [shop, setShop] = useState<any | null>(initialShop)
+  var [products, setProducts] = useState<any[]>(initialProducts)
+  var cart = useCart()
+  var [variantPopup, setVariantPopup] = useState<any>(null)
+  var [selectedVariant, setSelectedVariant] = useState<any>(null)
+
+  // Sync si les props serveur changent (navigation App Router)
   useEffect(function() {
-    async function load() {
-      var shopRes = await supabase
-        .from('shops').select('*').eq('slug', slug).eq('is_active', true).single()
-      setShop(shopRes.data)
-      if (shopRes.data) {
-        var prodRes = await supabase
-          .from('products').select('*, product_variants(*)')
-          .eq('shop_id', shopRes.data.id)
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true })
-        setProducts(prodRes.data || [])
-      }
-      setLoading(false)
-    }
-    load()
-  }, [slug])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-fs-cream flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-fs-orange border-t-transparent rounded-full" />
-      </div>
-    )
-  }
+    setShop(initialShop)
+    setProducts(initialProducts)
+  }, [slug, initialShop, initialProducts])
 
   if (!shop) {
     return (
@@ -105,9 +90,15 @@ export default function CatalogueClient({ slug }: { slug: string }) {
 
                 {/* ZONE CLIQUABLE : image + infos uniquement */}
                 <a href={'/boutique/' + shop.slug + '/produit/' + product.id} className="block">
-                  <div className="aspect-square bg-fs-cream flex items-center justify-center">
+                  <div className="aspect-square bg-fs-cream relative flex items-center justify-center">
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" loading="lazy" />
+                      <Image
+                        src={product.image_url}
+                        alt={product.name}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 640px) 50vw, 200px"
+                      />
                     ) : (
                       <span className="text-5xl">🛍️</span>
                     )}

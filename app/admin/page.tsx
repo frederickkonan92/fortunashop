@@ -1,10 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import AdminNav from './nav'
 import { formatPrice, statusStyle, statusLabel } from '@/lib/utils'
-import OnboardingWizard from '@/components/onboarding'
+
+var OnboardingWizard = dynamic(function() {
+  return import('@/components/onboarding')
+}, {
+  ssr: false,
+  loading: function() {
+    return (
+      <div className="min-h-screen bg-fs-cream flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-fs-orange border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+})
 
 export default function AdminPage() {
   var [orders, setOrders] = useState<any[]>([])
@@ -21,10 +34,22 @@ export default function AdminPage() {
     if (typeof Notification !== 'undefined') {
       setNotifPermission(Notification.permission)
     }
-    var interval = setInterval(function() {
+    var interval: ReturnType<typeof setInterval> | null = null
+    function tick() {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
       loadData()
-    }, 30000)
-    return function() { clearInterval(interval) }
+    }
+    interval = setInterval(tick, 30000)
+    function onVisibilityChange() {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadData()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return function() {
+      if (interval) clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [])
 
   useEffect(function() {
