@@ -1,4 +1,18 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Conditions générales d’utilisation — fortunashop',
+  description: 'CGU du service fortunashop : abonnement, boutiques artisans, responsabilités.',
+  openGraph: {
+    title: 'CGU — fortunashop',
+    description: 'Conditions générales d’utilisation fortunashop.fr',
+    type: 'website',
+    url: 'https://fortunashop.fr/cgu',
+    siteName: 'fortunashop',
+  },
+  twitter: { card: 'summary', title: 'CGU — fortunashop' },
+}
 
 export default function CGUPage() {
   return (

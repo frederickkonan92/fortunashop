@@ -1,4 +1,18 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Politique de confidentialité — fortunashop',
+  description: 'Données personnelles, cookies et vos droits sur fortunashop.fr.',
+  openGraph: {
+    title: 'Confidentialité — fortunashop',
+    description: 'Politique de confidentialité fortunashop',
+    type: 'website',
+    url: 'https://fortunashop.fr/confidentialite',
+    siteName: 'fortunashop',
+  },
+  twitter: { card: 'summary', title: 'Confidentialité — fortunashop' },
+}
 
 export default function ConfidentialitePage() {
   return (

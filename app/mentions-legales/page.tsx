@@ -1,4 +1,18 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Mentions légales — fortunashop',
+  description: 'Éditeur fortunashop, hébergement, propriété intellectuelle et contact Fortuna Digital.',
+  openGraph: {
+    title: 'Mentions légales — fortunashop',
+    description: 'Informations légales fortunashop.fr',
+    type: 'website',
+    url: 'https://fortunashop.fr/mentions-legales',
+    siteName: 'fortunashop',
+  },
+  twitter: { card: 'summary', title: 'Mentions légales — fortunashop' },
+}
 
 export default function MentionsLegalesPage() {
   return (

@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ci": "npm run test && npm run build"
+    "test:e2e": "playwright test",
+    "ci": "npm run test && npm run build",
+    "ci:e2e": "npm run test && npm run build && playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -21,6 +23,7 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
