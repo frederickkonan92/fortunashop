@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/utils'
+import { isStatusFinal } from '@/lib/order-status'
 
 function isSuiviTerminal(status: string, deliveryMode: string) {
-  if (status === 'annulee') return true
+  if (isStatusFinal(status)) return true
   if (deliveryMode === 'retrait' && status === 'prete') return true
   if (deliveryMode !== 'retrait' && status === 'livree') return true
   return false

@@ -13,16 +13,51 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
   })
   var [copied, setCopied] = useState(false)
 
+  var storageKey = 'onboarding-' + shop?.id
+
+  var persistSteps = function(next: any) {
+    try {
+      if (typeof window === 'undefined' || !storageKey) return
+      localStorage.setItem(storageKey, JSON.stringify(next))
+    } catch (e) {}
+  }
+
+  var markStep = function(stepKey: string, value: boolean) {
+    setSteps(function(prev) {
+      var next = { ...prev, [stepKey]: value }
+      persistSteps(next)
+      return next
+    })
+  }
+
   // Vérifie si l'artisan a déjà reçu une commande
   useEffect(function() {
+    // Recharge les cases déjà validées (quand l'utilisateur revient après une redirection)
+    try {
+      if (typeof window !== 'undefined' && storageKey) {
+        var raw = localStorage.getItem(storageKey)
+        if (raw) {
+          var parsed = JSON.parse(raw)
+          setSteps(function(prev) {
+            return {
+              ...prev,
+              products: !!parsed.products,
+              test: !!parsed.test,
+              share: !!parsed.share,
+            }
+          })
+        }
+      }
+    } catch (e) {}
+
     async function checkFirstOrder() {
-      var { count } = await supabase
+      var { count, error } = await supabase
         .from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('shop_id', shop.id)
 
-      if (count && count > 0) {
-        setSteps(function(prev) { return { ...prev, firstOrder: true } })
+      if (!error && count != null && count > 0) {
+        markStep('firstOrder', true)
       }
     }
     checkFirstOrder()
@@ -82,7 +117,7 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
 
         {/* Étape 1 — Vérifier les produits */}
         <div
-          onClick={function() { setSteps(function(prev) { return { ...prev, products: true } }) }}
+          onClick={function() { markStep('products', true) }}
           className={'rounded-xl p-4 mb-2 border cursor-pointer transition ' +
             (steps.products
               ? 'bg-green-50 border-green-200'
@@ -98,6 +133,7 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
               <p className="text-xs text-fs-gray mt-1">Vérifiez que vos photos, prix et descriptions sont corrects.</p>
               <Link
                 href="/admin/produits"
+                onClick={function() { markStep('products', true) }}
                 className="inline-block mt-2 text-xs font-semibold text-fs-orange hover:underline"
               >
                 Voir mes produits →
@@ -108,7 +144,7 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
 
         {/* Étape 2 — Tester la boutique */}
         <div
-          onClick={function() { setSteps(function(prev) { return { ...prev, test: true } }) }}
+          onClick={function() { markStep('test', true) }}
           className={'rounded-xl p-4 mb-2 border cursor-pointer transition ' +
             (steps.test
               ? 'bg-green-50 border-green-200'
@@ -126,6 +162,7 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
                 href={shopUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={function() { markStep('test', true) }}
                 className="inline-block mt-2 text-xs font-semibold text-fs-orange hover:underline"
               >
                 Voir ma boutique →
@@ -153,7 +190,7 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
                 <button
                   onClick={function() {
                     handleCopyLink()
-                    setSteps(function(prev) { return { ...prev, share: true } })
+                    markStep('share', true)
                   }}
                   className="text-xs font-semibold px-3 py-1.5 rounded-full bg-fs-ink text-white hover:bg-fs-orange transition"
                 >
@@ -163,7 +200,7 @@ export default function OnboardingWizard({ shop }: { shop: any }) {
                   href={'https://wa.me/?text=' + whatsappMessage}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={function() { setSteps(function(prev) { return { ...prev, share: true } }) }}
+                  onClick={function() { markStep('share', true) }}
                   className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#25D366] text-white hover:bg-[#1DA851] transition"
                 >
                   Partager sur WhatsApp

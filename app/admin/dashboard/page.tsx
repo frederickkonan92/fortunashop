@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import { hasAddon, isProPlan, isPremiumPlan } from '@/lib/plan-rules'
+import { SHOP_SELECT, ORDER_SELECT } from '@/lib/admin-data'
+import { HelpButton } from '@/components/help-panel'
 import AdminNav from '../nav'
 
 var OnboardingWizard = dynamic(function() {
@@ -41,14 +43,14 @@ export default function DashboardPage() {
     var userRes = await supabase.auth.getUser()
     var user = userRes.data.user
     if (!user) return
-    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    var shopRes: any = await supabase.from('shops').select(SHOP_SELECT).eq('owner_id', user.id).single()
     setShop(shopRes.data)
     if (shopRes.data) {
-      var ordersRes = await supabase.from('orders').select('*, order_items(*)').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
+      var ordersRes: any = await supabase.from('orders').select(ORDER_SELECT + ', order_items(*)').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setOrders(ordersRes.data || [])
-      var viewsRes = await supabase.from('page_views').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
+      var viewsRes: any = await supabase.from('page_views').select('id, shop_id, referrer, created_at').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setPageViews(viewsRes.data || [])
-      var physicalRes = await supabase.from('physical_sales').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
+      var physicalRes: any = await supabase.from('physical_sales').select('id, shop_id, total, items, payment_mode, created_at').eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setPhysicalSales(physicalRes.data || [])
     }
     setLoading(false)
@@ -213,7 +215,10 @@ export default function DashboardPage() {
       <header className="bg-fs-ink text-white px-4 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
-            <h1 className="font-nunito font-black text-base">Dashboard</h1>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <h1 className="font-nunito font-black text-base">Dashboard</h1>
+              <HelpButton section="dashboard" />
+            </div>
             <p className="text-xs text-gray-500">{shop?.name} · Plan {shop?.plan}</p>
           </div>
           <button onClick={exportCSV} className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">Export CSV</button>

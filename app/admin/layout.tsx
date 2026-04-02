@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
 import SupportButton from './support-button'
+import { HelpButton } from '@/components/help-panel'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -32,6 +33,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       {children}
+      {pathname !== '/admin/login' && (
+        <div style={{ position: 'fixed', bottom: 80, right: 20, zIndex: 100 }}>
+          <HelpButton section="faq" label="Aide et FAQ" variant="floating" />
+        </div>
+      )}
       <SupportButton />
     </>
   )

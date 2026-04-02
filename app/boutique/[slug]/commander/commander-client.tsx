@@ -56,94 +56,78 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
     if (!shop || !paymentMode) return
     setLoading(true)
 
-    var orderRes = await supabase.from('orders').insert({
-      shop_id: shop.id,
-      customer_name: form.name,
-      customer_phone: form.phone,
-      customer_address: form.delivery === 'domicile' ? form.address : null,
-      delivery_mode: form.delivery,
-      total: cart.total,
-      payment_mode: paymentMode,
-      payment_status: paymentMode === 'especes' ? 'en_attente' : 'en_attente'
-    }).select().single()
-
-    if (!orderRes.error && orderRes.data) {
-      var orderItems = cart.items.map(function(item) {
-        // Pour les variantes, l'id panier = "productId-variantValue"
-        // On extrait le vrai product_id en prenant la partie avant le premier "-"
-        // Ex: "abc123-Rouge" → product_id = "abc123", variant = "Rouge"
-        var parts = item.id.split('-')
-        var isVariant = parts.length > 5 // UUID a 5 parties séparées par "-"
-        var realProductId = isVariant ? parts.slice(0, 5).join('-') : item.id
-        var variantValue = isVariant ? parts.slice(5).join('-') : null
-
-        return {
-          order_id: orderRes.data.id,
-          product_id: realProductId,
-          product_name: item.name,
-          product_price: item.price,
-          quantity: item.quantity,
-          variant_value: variantValue
-        }
-      })
-      await supabase.from('order_items').insert(orderItems)
-
-      for (var i = 0; i < cart.items.length; i++) {
-        var item = cart.items[i]
-        if (item.stock_quantity != null) {
-          var parts2 = item.id.split('-')
-          var isVariant2 = parts2.length > 5
-          var realId = isVariant2 ? parts2.slice(0, 5).join('-') : item.id
-          var variantVal = isVariant2 ? parts2.slice(5).join('-') : null
-          var newStock = Math.max(0, item.stock_quantity - item.quantity)
-
-          if (isVariant2 && variantVal) {
-            // Met à jour le stock de la variante spécifique
-            await supabase.from('product_variants')
-              .update({ stock_quantity: newStock })
-              .eq('product_id', realId)
-              .eq('variant_value', variantVal)
-          } else {
-            // Produit sans variante → met à jour le stock produit
-            await supabase.from('products').update({
-              stock_quantity: newStock,
-              is_active: newStock > 0
-            }).eq('id', realId)
+    // Appel API serveur atomique (RPC PostgreSQL)
+    var orderRes = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        shop_id: shop.id,
+        customer_name: form.name,
+        customer_phone: form.phone,
+        customer_address: form.delivery === 'domicile' ? form.address : null,
+        delivery_mode: form.delivery,
+        total: cart.total,
+        payment_mode: paymentMode,
+        items: cart.items.map(function(item) {
+          var parts = item.id.split('-')
+          var isVariant = parts.length > 5
+          return {
+            product_id: isVariant ? parts.slice(0, 5).join('-') : item.id,
+            product_name: item.name,
+            product_price: item.price,
+            quantity: item.quantity,
+            variant_value: isVariant ? parts.slice(5).join('-') : null,
           }
+        }),
+      })
+    })
 
-          // Récupère les infos complètes du produit pour vérifier le seuil
-          var prodCheck = await supabase.from('products').select('*').eq('id', realId).single()
-          if (prodCheck.data && shop?.phone) {
-            var p = prodCheck.data
-            var onlineStock = Math.max(0, p.stock_quantity - (p.stock_buffer || 0))
-            // Envoie alerte WhatsApp si stock bas ou rupture
-            if (onlineStock <= (p.stock_alert || 3)) {
-              var msg = onlineStock === 0
-                ? '⚠️ RUPTURE DE STOCK fortunashop\n\n' + p.name + ' est épuisé en ligne.\n\nReapprovisionnez votre stock.'
-                : '⚠️ Stock bas fortunashop\n\n' + p.name + ' : ' + onlineStock + ' unités restantes.\n\nPensez à réapprovisionner.'
-              var waAlert = 'https://wa.me/' + shop.phone + '?text=' + encodeURIComponent(msg)
-              window.open(waAlert, '_blank')
-            }
+    var orderData = await orderRes.json()
+
+    if (!orderRes.ok || !orderData.success) {
+      console.error('Erreur commande:', orderData)
+      setLoading(false)
+      return
+    }
+
+    // Alerte WhatsApp stock bas (vérification après commande)
+    for (var i = 0; i < cart.items.length; i++) {
+      var item = cart.items[i]
+      if (item.stock_quantity != null) {
+        var parts2 = item.id.split('-')
+        var isVariant2 = parts2.length > 5
+        var realId = isVariant2 ? parts2.slice(0, 5).join('-') : item.id
+
+        var prodCheck = await supabase.from('products').select('name, stock_quantity, stock_buffer, stock_alert').eq('id', realId).single()
+        if (prodCheck.data && shop?.phone) {
+          var p = prodCheck.data
+          var onlineStock = Math.max(0, p.stock_quantity - (p.stock_buffer || 0))
+          if (onlineStock <= (p.stock_alert || 3)) {
+            var msg = onlineStock === 0
+              ? '⚠️ RUPTURE DE STOCK fortunashop\n\n' + p.name + ' est épuisé en ligne.\n\nReapprovisionnez votre stock.'
+              : '⚠️ Stock bas fortunashop\n\n' + p.name + ' : ' + onlineStock + ' unités restantes.\n\nPensez à réapprovisionner.'
+            var waAlert = 'https://wa.me/' + shop.phone + '?text=' + encodeURIComponent(msg)
+            window.open(waAlert, '_blank')
           }
         }
       }
-
-      var itemsList = cart.items.map(function(item) {
-        return item.name + ' x' + item.quantity
-      }).join(', ')
-
-      setConfirmation({
-        orderNumber: orderRes.data.order_number,
-        shopPhone: shop.phone,
-        shopName: shop.name,
-        items: itemsList,
-        total: cart.total,
-        customerName: form.name
-      })
-
-      cart.clearCart()
-      setStep('confirmation')
     }
+
+    var itemsList = cart.items.map(function(item) {
+      return item.name + ' x' + item.quantity
+    }).join(', ')
+
+    setConfirmation({
+      orderNumber: orderData.order_number,
+      shopPhone: shop.phone,
+      shopName: shop.name,
+      items: itemsList,
+      total: cart.total,
+      customerName: form.name
+    })
+
+    cart.clearCart()
+    setStep('confirmation')
     setLoading(false)
   }
 
@@ -319,7 +303,11 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
               {/* Image du produit */}
               <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-fs-border relative">
                 {item.image_url ? (
-                  <Image src={item.image_url} alt={item.name} fill className="object-contain" sizes="48px" />
+                  item.image_url.indexOf('images.unsplash.com') !== -1 ? (
+                    <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <Image src={item.image_url} alt={item.name} fill className="object-contain" sizes="48px" />
+                  )
                 ) : (
                   <span className="text-xl">🛍️</span>
                 )}

@@ -36,9 +36,13 @@ describe('statusLabel', function() {
     expect(statusLabel('livree')).toBe('Livrée')
   })
 
+  it('statuts additionnels : annulee et prete', function() {
+    expect(statusLabel('annulee')).toBe('Annulée')
+    expect(statusLabel('prete')).toBe('Prête')
+  })
+
   it('statut inconnu : renvoie la clé', function() {
-    expect(statusLabel('annulee')).toBe('annulee')
-    expect(statusLabel('prete')).toBe('prete')
+    expect(statusLabel('xyz_inconnu')).toBe('xyz_inconnu')
   })
 })
 
@@ -49,7 +53,11 @@ describe('statusStyle', function() {
     expect(statusStyle('livree')).toContain('2A7A50')
   })
 
+  it('statut annulee : style rouge', function() {
+    expect(statusStyle('annulee')).toContain('DC2626')
+  })
+
   it('statut inconnu : style neutre', function() {
-    expect(statusStyle('annulee')).toContain('gray')
+    expect(statusStyle('xyz_inconnu')).toContain('gray')
   })
 })

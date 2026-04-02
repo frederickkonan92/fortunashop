@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logInfo, logError } from '@/lib/logger'
 
 // Client Supabase côté serveur avec la service role key
 // Permet d'insérer dans leads sans restriction RLS
@@ -35,6 +36,12 @@ var MAX_LEN = {
 
 export async function POST(request: Request) {
   try {
+    // Validation taille du body (max 10KB)
+    var contentLength = parseInt(request.headers.get('content-length') || '0')
+    if (contentLength > 10240) {
+      return NextResponse.json({ error: 'Payload trop volumineux' }, { status: 413 })
+    }
+
     var body = await request.json()
 
     // Validation basique des champs requis
@@ -66,7 +73,7 @@ export async function POST(request: Request) {
     }).select().single()
 
     if (error) {
-      console.error('Erreur insert lead:', JSON.stringify(error))
+      logError('api/leads', 'Erreur insert lead', { error: error.message })
       return NextResponse.json({ error: 'Erreur insertion', details: error.message }, { status: 500 })
     }
 
@@ -85,8 +92,8 @@ export async function POST(request: Request) {
     // Génère le lien WhatsApp de notification
     var notifLink = 'https://wa.me/' + NOTIFY_PHONE + '?text=' + encodeURIComponent(notifMessage)
 
-    // Log dans la console Vercel (backup)
-    console.log('📧 NOUVEAU LEAD:', nom, whatsapp, plan, addonsText)
+    // Log structuré
+    logInfo('api/leads', 'Nouveau lead', { nom: nom, whatsapp: whatsapp, plan: plan, addons: addonsText })
 
     // Envoi email Brevo directement (avec await pour que Vercel ne tue pas le processus)
     try {
@@ -114,8 +121,8 @@ export async function POST(request: Request) {
           htmlContent: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#DC5014;color:white;padding:20px;border-radius:12px 12px 0 0;"><h2 style="margin:0;font-size:18px;">Nouveau lead fortunashop</h2></div><div style="background:#FDF8F3;padding:24px;border:1px solid #DDD0B8;border-radius:0 0 12px 12px;"><table style="width:100%;border-collapse:collapse;"><tr><td style="padding:10px 0;color:#7C6C58;width:120px;font-size:14px;">Nom</td><td style="padding:10px 0;font-weight:bold;font-size:14px;">' + hNom + '</td></tr><tr><td style="padding:10px 0;color:#7C6C58;font-size:14px;">WhatsApp</td><td style="padding:10px 0;font-weight:bold;font-size:14px;">' + hWa + '</td></tr><tr><td style="padding:10px 0;color:#7C6C58;font-size:14px;">Activité</td><td style="padding:10px 0;font-size:14px;">' + hAct + '</td></tr><tr><td style="padding:10px 0;color:#7C6C58;font-size:14px;">Plan</td><td style="padding:10px 0;font-weight:bold;color:#DC5014;font-size:14px;">' + hPlan + '</td></tr><tr><td style="padding:10px 0;color:#7C6C58;font-size:14px;">Lien social</td><td style="padding:10px 0;font-size:14px;">' + hLien + '</td></tr><tr><td style="padding:10px 0;color:#7C6C58;font-size:14px;">Add-ons</td><td style="padding:10px 0;font-size:14px;">' + hAddons + '</td></tr></table><hr style="border:none;border-top:1px solid #DDD0B8;margin:16px 0;"><p style="font-size:12px;color:#7C6C58;margin:0;">Reçu le ' + escapeHtml(dateStr) + '</p></div></div>',
         }),
       })
-    } catch (emailErr) {
-      console.error('Erreur envoi email Brevo:', emailErr)
+    } catch (emailErr: any) {
+      logError('api/leads', 'Erreur envoi email Brevo', { error: emailErr?.message })
     }
 
     return NextResponse.json({
@@ -125,7 +132,7 @@ export async function POST(request: Request) {
     })
 
   } catch (err: any) {
-    console.error('Erreur API leads:', err)
+    logError('api/leads', 'Erreur serveur', { error: err?.message })
     if (err && err.message && String(err.message).indexOf('manquant') !== -1) {
       return NextResponse.json({ error: 'Configuration serveur' }, { status: 500 })
     }

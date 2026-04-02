@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import { SHOP_SELECT, PRODUCT_SELECT } from '@/lib/admin-data'
 import AdminNav from '../nav'
 
 export default function VentesPage() {
@@ -22,15 +23,15 @@ export default function VentesPage() {
     var userRes = await supabase.auth.getUser()
     var user = userRes.data.user
     if (!user) return
-    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    var shopRes: any = await supabase.from('shops').select(SHOP_SELECT).eq('owner_id', user.id).single()
     setShop(shopRes.data)
     if (shopRes.data) {
-      var prodRes = await supabase.from('products').select('*')
+      var prodRes: any = await supabase.from('products').select(PRODUCT_SELECT + ', sort_order')
         .eq('shop_id', shopRes.data.id)
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
       setProducts(prodRes.data || [])
-      var salesRes = await supabase.from('physical_sales').select('*')
+      var salesRes = await supabase.from('physical_sales').select('id, shop_id, total, items, payment_mode, created_at')
         .eq('shop_id', shopRes.data.id)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -93,7 +94,7 @@ export default function VentesPage() {
     var newAlerts: {name: string, stock: number, status: 'low' | 'out'}[] = []
     for (var j = 0; j < cartSnapshot.length; j++) {
       var soldItem = cartSnapshot[j]
-      var prodRes = await supabase.from('products').select('*').eq('id', soldItem.product.id).single()
+      var prodRes: any = await supabase.from('products').select('name, stock_quantity, stock_buffer, stock_alert').eq('id', soldItem.product.id).single()
       if (prodRes.data) {
         var prod = prodRes.data
         // Stock disponible en ligne après la vente

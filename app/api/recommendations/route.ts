@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
+import { logInfo, logError } from '@/lib/logger'
 
 // NOTE: route handler must export named HTTP methods (POST/GET) for Next.js app router.
 // IMPORTANT: ne pas initialiser les clients à l'évaluation du module (sinon le build peut planter
@@ -21,9 +22,21 @@ function getAnthropic() {
 
 export async function POST(req: NextRequest) {
   try {
+    // Validation taille du body (max 10KB)
+    var contentLength = parseInt(req.headers.get('content-length') || '0')
+    if (contentLength > 10240) {
+      return NextResponse.json({ error: 'Payload trop volumineux' }, { status: 413 })
+    }
+
     var body = await req.json()
     var shopId = body.shop_id
     if (!shopId) return NextResponse.json({ error: 'shop_id manquant' }, { status: 400 })
+
+    // Validation UUID shop_id
+    var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (typeof shopId !== 'string' || !uuidRegex.test(shopId)) {
+      return NextResponse.json({ error: 'shop_id invalide' }, { status: 400 })
+    }
 
     var supabase = getSupabaseAdmin()
     var anthropic = getAnthropic()
@@ -152,6 +165,8 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après, sans balises mar
     var clean = text.replace(/```json|```/g, '').trim()
     var recommendations = JSON.parse(clean)
 
+    logInfo('api/recommendations', 'Recommandations IA générées', { shop_id: shopId, count: recommendations.length })
+
     // Sauvegarde en base avec upsert (insert ou update si déjà existant)
     await supabase.from('ai_recommendations').upsert({
       shop_id: shopId,
@@ -166,7 +181,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte avant ou après, sans balises mar
     })
 
   } catch (err: any) {
-    console.error('AI recommendations error:', err)
+    logError('api/recommendations', 'Erreur IA recommendations', { error: err?.message })
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

@@ -16,14 +16,23 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
     <div>
       {/* Photo principale — object-contain pour voir l'article entier */}
       <div className="w-full h-80 bg-white relative flex items-center justify-center overflow-hidden">
-        <Image
-          src={photos[selected]}
-          alt={productName}
-          fill
-          className="object-contain"
-          sizes="100vw"
-          priority
-        />
+        {photos[selected].indexOf('images.unsplash.com') !== -1 ? (
+          <img
+            src={photos[selected]}
+            alt={productName}
+            className="w-full h-full object-contain"
+            loading="eager"
+          />
+        ) : (
+          <Image
+            src={photos[selected]}
+            alt={productName}
+            fill
+            className="object-contain"
+            sizes="100vw"
+            priority
+          />
+        )}
       </div>
       {/* Miniatures — affichées seulement s'il y a plus d'une photo */}
       {photos.length > 1 && (
@@ -33,7 +42,11 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
               <button key={i} onClick={function() { setSelected(i) }}
                       className={'relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition ' +
                         (selected === i ? 'border-fs-orange' : 'border-transparent')}>
-                <Image src={url} alt={productName + ' ' + (i + 1)} fill className="object-cover" sizes="64px" />
+                {url.indexOf('images.unsplash.com') !== -1 ? (
+                  <img src={url} alt={productName + ' ' + (i + 1)} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <Image src={url} alt={productName + ' ' + (i + 1)} fill className="object-cover" sizes="64px" />
+                )}
               </button>
             )
           })}

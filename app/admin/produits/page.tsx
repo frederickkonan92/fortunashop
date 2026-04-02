@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import { hasAddon, getMaxProductsForPlan, getMaxCatalogEditsForPlan } from '@/lib/plan-rules'
+import { SHOP_SELECT, PRODUCT_SELECT } from '@/lib/admin-data'
+import { HelpButton } from '@/components/help-panel'
 import AdminNav from '../nav'
 
 export default function ProduitsPage() {
@@ -62,10 +64,10 @@ var updateVariant = function(index: number, field: string, value: string) {
     var userRes = await supabase.auth.getUser()
     var user = userRes.data.user
     if (!user) return
-    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    var shopRes: any = await supabase.from('shops').select(SHOP_SELECT).eq('owner_id', user.id).single()
     setShop(shopRes.data)
     if (shopRes.data) {
-      var prodRes = await supabase.from('products').select('*')
+      var prodRes: any = await supabase.from('products').select(PRODUCT_SELECT + ', sort_order')
         .eq('shop_id', shopRes.data.id).order('sort_order', { ascending: true })
       setProducts(prodRes.data || [])
       var now = new Date()
@@ -256,7 +258,10 @@ var startEdit = async function(product: any) {
       <header className="bg-fs-ink text-white px-4 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
-            <h1 className="font-nunito font-black text-base">Mes produits</h1>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <h1 className="font-nunito font-black text-base">Mes produits</h1>
+              <HelpButton section="produits" />
+            </div>
             <p className="text-xs text-gray-500">
               {products.length}/{maxProducts} produit{products.length > 1 ? 's' : ''} ·{' '}
               {monthEdits}/{maxEdits} modif{monthEdits > 1 ? 's' : ''}
@@ -510,7 +515,11 @@ var startEdit = async function(product: any) {
                  className={'bg-white rounded-2xl border border-fs-border p-4 flex gap-4' + (!product.is_active ? ' opacity-50' : '')}>
               <div className="w-16 h-16 rounded-xl bg-fs-cream flex items-center justify-center shrink-0 overflow-hidden relative">
                 {product.image_url ? (
-                  <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="64px" />
+                  product.image_url.indexOf('images.unsplash.com') !== -1 ? (
+                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="64px" />
+                  )
                 ) : (
                   <span className="text-2xl">📦</span>
                 )}

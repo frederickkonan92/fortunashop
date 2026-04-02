@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { SHOP_SELECT } from '@/lib/admin-data'
+import { HelpButton } from '@/components/help-panel'
 import AdminNav from '../nav'
 
 export default function LivreursPage() {
@@ -20,10 +22,10 @@ export default function LivreursPage() {
     var userRes = await supabase.auth.getUser()
     var user = userRes.data.user
     if (!user) return
-    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    var shopRes: any = await supabase.from('shops').select(SHOP_SELECT).eq('owner_id', user.id).single()
     setShop(shopRes.data)
     if (shopRes.data) {
-      var res = await supabase.from('livreurs').select('*').eq('shop_id', shopRes.data.id).order('created_at', { ascending: true })
+      var res = await supabase.from('livreurs').select('id, name, phone, zone, shop_id, created_at').eq('shop_id', shopRes.data.id).order('created_at', { ascending: true })
       setLivreurs(res.data || [])
     }
   }
@@ -71,7 +73,10 @@ export default function LivreursPage() {
       <header className="bg-fs-ink text-white px-4 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
-            <h1 className="font-nunito font-black text-base">Mes livreurs</h1>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <h1 className="font-nunito font-black text-base">Mes livreurs</h1>
+              <HelpButton section="livreurs" />
+            </div>
             <p className="text-xs text-gray-500">{livreurs.length}/{maxLivreurs} livreur{maxLivreurs > 1 ? 's' : ''}</p>
           </div>
           <button onClick={function() { if (canAdd) setShowForm(true); else alert('Limite de ' + maxLivreurs + ' livreur(s) pour le plan ' + (shop?.plan || 'starter') + '. Passez au plan superieur.') }}

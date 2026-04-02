@@ -92,13 +92,22 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                 <a href={'/boutique/' + shop.slug + '/produit/' + product.id} className="block">
                   <div className="aspect-square bg-fs-cream relative flex items-center justify-center">
                     {product.image_url ? (
-                      <Image
-                        src={product.image_url}
-                        alt={product.name}
-                        fill
-                        className="object-contain"
-                        sizes="(max-width: 640px) 50vw, 200px"
-                      />
+                      product.image_url.indexOf('images.unsplash.com') !== -1 ? (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Image
+                          src={product.image_url}
+                          alt={product.name}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 640px) 50vw, 200px"
+                        />
+                      )
                     ) : (
                       <span className="text-5xl">🛍️</span>
                     )}

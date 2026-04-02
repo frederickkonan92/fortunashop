@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import AdminNav from './nav'
 import { formatPrice, statusStyle, statusLabel } from '@/lib/utils'
+import { SHOP_SELECT, ORDER_SELECT } from '@/lib/admin-data'
+import { HelpButton } from '@/components/help-panel'
 
 var OnboardingWizard = dynamic(function() {
   return import('@/components/onboarding')
@@ -33,10 +35,10 @@ export default function AdminPage() {
     var userRes = await supabase.auth.getUser()
     var user = userRes.data.user
     if (!user) return
-    var shopRes = await supabase.from('shops').select('*').eq('owner_id', user.id).single()
+    var shopRes: any = await supabase.from('shops').select(SHOP_SELECT).eq('owner_id', user.id).single()
     setShop(shopRes.data)
     if (shopRes.data) {
-      var ordersRes = await supabase.from('orders').select('*, order_items(*)')
+      var ordersRes: any = await supabase.from('orders').select(ORDER_SELECT + ', order_items(*)')
         .eq('shop_id', shopRes.data.id).order('created_at', { ascending: false })
       setOrders(ordersRes.data || [])
     }
@@ -65,6 +67,7 @@ export default function AdminPage() {
   // Temps réel Supabase sur les commandes (remplace le polling). Requis côté projet : Publication Realtime activée pour la table `orders` (Dashboard Supabase → Database → Publications).
   useEffect(function() {
     if (!shop?.id) return
+    var lastRealtimeEvent = Date.now()
     var channel = supabase
       .channel('admin-orders-' + shop.id)
       .on(
@@ -76,11 +79,22 @@ export default function AdminPage() {
           filter: 'shop_id=eq.' + shop.id,
         },
         function() {
+          lastRealtimeEvent = Date.now()
           loadDataRef.current()
         }
       )
       .subscribe()
+
+    // Fallback polling : si le canal Realtime ne reçoit rien pendant 60s, on recharge les données
+    var fallbackInterval = setInterval(function() {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - lastRealtimeEvent > 60000) {
+        loadDataRef.current()
+      }
+    }, 60000)
+
     return function() {
+      clearInterval(fallbackInterval)
       supabase.removeChannel(channel)
     }
   }, [shop?.id])
@@ -190,7 +204,10 @@ export default function AdminPage() {
       <header className="bg-fs-ink text-white px-4 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
-            <h1 className="font-nunito font-black text-base">{shop?.name || 'Mon espace'}</h1>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <h1 className="font-nunito font-black text-base">{shop?.name || 'Mon espace'}</h1>
+              <HelpButton section="commandes" />
+            </div>
             <p className="text-xs text-gray-500">Admin</p>
           </div>
           <div className="flex items-center gap-2">
