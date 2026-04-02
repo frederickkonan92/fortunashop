@@ -56,9 +56,9 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white border-b border-fs-border px-4 py-3 flex items-center gap-3 shadow-sm">
         {shop.logo_url ? (
-          <img src={shop.logo_url} alt={shop.name} style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain' }} />
+          <img src={shop.logo_url} alt={shop.name} style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'contain', background: 'white', padding: 4, border: '1.5px solid #E8DDD0' }} />
         ) : (
-          <div style={{ width: 56, height: 56, borderRadius: 14, background: '#DC5014', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 20 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 16, background: '#DC5014', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 28 }}>
             {shop.name?.charAt(0)}
           </div>
         )}
