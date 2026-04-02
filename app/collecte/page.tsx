@@ -64,10 +64,10 @@ export default function CollectePage() {
           fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: 22,
           color: 'white', margin: '0 0 8px 0', lineHeight: 1.3,
         }}>
-          Ce dont j ai besoin pour creer ta boutique
+          Ce dont j'ai besoin pour créer ta boutique
         </h1>
         <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', margin: 0 }}>
-          Tout par WhatsApp, a ton rythme
+          Tout par WhatsApp, à ton rythme
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export default function CollectePage() {
           padding: 20, marginBottom: 24, textAlign: 'center',
         }}>
           <p style={{ fontSize: 14, color: '#2C1A0E', lineHeight: 1.6, margin: 0 }}>
-            Pour te livrer ta boutique en 7 jours, j ai besoin de quelques infos.
+            Pour te livrer ta boutique en 7 jours, j'ai besoin de quelques infos.
             Pas de stress — envoie tout en plusieurs fois sur WhatsApp.
           </p>
         </div>
@@ -89,8 +89,8 @@ export default function CollectePage() {
         <StepCard number={1} title="Ta marque">
           <CheckItem text="Nom de ta boutique" hint="Le nom affiche sur ton site" />
           <CheckItem text="Ton logo" hint="Envoie-le en photo. Pas obligatoire" />
-          <CheckItem text="Description de ton activite" hint='1-2 phrases. Ex : "Bijoux artisanaux en or et cauris"' />
-          <CheckItem text="Tes couleurs preferees" hint="Dis-moi 2 couleurs ou envoie un exemple de site que tu aimes" />
+          <CheckItem text="Description de ton activité" hint='1-2 phrases. Ex : "Bijoux artisanaux en or et cauris"' />
+          <CheckItem text="Tes couleurs préférées" hint="Dis-moi 2 couleurs ou envoie un exemple de site que tu aimes" />
         </StepCard>
 
         {/* ÉTAPE 2 — TES PRODUITS */}
@@ -116,9 +116,9 @@ export default function CollectePage() {
               background: '#FFF5EE', borderRadius: 10, padding: 14,
               fontSize: 13, color: '#5C4A3A', lineHeight: 1.7,
             }}>
-              <strong>Nom :</strong> Collier cauris dore<br />
+              <strong>Nom :</strong> Collier cauris doré<br />
               <strong>Prix :</strong> 15 000 FCFA<br />
-              <strong>Categorie :</strong> bijoux<br />
+              <strong>Catégorie :</strong> bijoux<br />
               <strong>Tailles :</strong> taille unique<br />
               + la photo
             </div>
@@ -138,22 +138,22 @@ export default function CollectePage() {
               </span>
             </div>
             <p style={{ fontSize: 14, fontWeight: 700, color: '#2C1A0E', margin: '0 0 10px 0' }}>
-              Remplis le tableau que je t envoie
+              Remplis le tableau que je t'envoie
             </p>
             <div style={{
               background: '#FFF5EE', borderRadius: 10, padding: 14,
               fontSize: 12, color: '#5C4A3A', lineHeight: 1.8,
             }}>
-              <strong>Colonne 1</strong> — Numero du produit<br />
+              <strong>Colonne 1</strong> — Numéro du produit<br />
               <strong>Colonne 2</strong> — Nom du produit<br />
               <strong>Colonne 3</strong> — Prix en FCFA<br />
-              <strong>Colonne 4</strong> — Categorie (bijoux, sacs, homme, femme...)<br />
+              <strong>Colonne 4</strong> — Catégorie (bijoux, sacs, homme, femme...)<br />
               <strong>Colonne 5</strong> — Tailles ou couleurs disponibles<br />
               <strong>Colonne 6</strong> — Description courte (optionnel)<br />
               <strong>Colonne 7</strong> — Stock (optionnel)
             </div>
             <p style={{ fontSize: 13, color: '#5C4A3A', margin: '12px 0 0 0', lineHeight: 1.5 }}>
-              Le tableau contient deja 2 exemples pour te guider. Demande-moi le lien sur WhatsApp !
+              Le tableau contient déjà 2 exemples pour te guider. Demande-moi le lien sur WhatsApp !
             </p>
           </div>
 
@@ -170,7 +170,7 @@ export default function CollectePage() {
                 <strong>Photo 1</strong> — une photo par produit (la plus belle)
               </p>
               <p style={{ margin: 0 }}>
-                <strong>Photos 2 a 5</strong> — envoie-les d affilee, je fais le tri
+                <strong>Photos 2 à 5</strong> — envoie-les d'affilée, je fais le tri
               </p>
             </div>
           </div>
@@ -179,20 +179,20 @@ export default function CollectePage() {
 
         {/* ÉTAPE 3 — TES MOYENS DE PAIEMENT */}
         <StepCard number={3} title="Tes moyens de paiement">
-          <CheckItem text="Numero Wave" hint="Celui sur lequel tes clients t'envoient l'argent" />
-          <CheckItem text="Numero Orange Money" hint="Optionnel" />
-          <CheckItem text="Numero MTN MoMo" hint="Optionnel" />
+          <CheckItem text="Numéro Wave" hint="Celui sur lequel tes clients t'envoient l'argent" />
+          <CheckItem text="Numéro Orange Money" hint="Optionnel" />
+          <CheckItem text="Numéro MTN MoMo" hint="Optionnel" />
         </StepCard>
 
         {/* ÉTAPE 4 — LA LIVRAISON */}
         <StepCard number={4} title="La livraison">
-          <CheckItem text="Tu livres a domicile ?" hint="Oui / Non / Seulement dans certaines zones" />
+          <CheckItem text="Tu livres à domicile ?" hint="Oui / Non / Seulement dans certaines zones" />
           <CheckItem text="Retrait possible ?" hint="Si oui, donne l'adresse" />
-          <CheckItem text="Nom et numero de ton livreur" hint="Si tu en as un" />
+          <CheckItem text="Nom et numéro de ton livreur" hint="Si tu en as un" />
         </StepCard>
 
         {/* ÉTAPE 5 — TES RÉSEAUX SOCIAUX */}
-        <StepCard number={5} title="Tes reseaux sociaux">
+        <StepCard number={5} title="Tes réseaux sociaux">
           <CheckItem text="Ton Instagram" />
           <CheckItem text="Ton WhatsApp public" />
           <CheckItem text="Ta page Facebook" hint="Optionnel" />
@@ -205,7 +205,7 @@ export default function CollectePage() {
             border: '1px solid #B8E0D0',
           }}>
             <p style={{ fontSize: 13, color: '#1A5C38', margin: 0, lineHeight: 1.5 }}>
-              <strong>Astuce</strong> — Commence par tes 10 best-sellers. Pas besoin d envoyer 60 produits d un coup.
+              <strong>Astuce</strong> — Commence par tes 10 best-sellers. Pas besoin d'envoyer 60 produits d'un coup.
             </p>
           </div>
           <div style={{
@@ -213,7 +213,7 @@ export default function CollectePage() {
             border: '1px solid #B8E0D0',
           }}>
             <p style={{ fontSize: 13, color: '#1A5C38', margin: 0, lineHeight: 1.5 }}>
-              <strong>Astuce</strong> — Photos : fond clair, bonne lumiere. Une bonne photo = plus de ventes.
+              <strong>Astuce</strong> — Photos : fond clair, bonne lumière. Une bonne photo = plus de ventes.
             </p>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function CollectePage() {
             textDecoration: 'none', marginBottom: 24,
           }}
         >
-          M envoyer mes infos par WhatsApp
+          M'envoyer mes infos par WhatsApp
         </a>
 
         {/* FOOTER */}
