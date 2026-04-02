@@ -131,6 +131,145 @@ var HELP_CONTENT: Record<string, { title: string; sections: Array<{ subtitle: st
         subtitle: 'Mes photos ne s\'affichent pas',
         text: 'Vérifie que tes fichiers n\'ont pas d\'espaces ni d\'accents dans le nom. Renomme-les si nécessaire (ex: collier-dore.jpg au lieu de Collier Doré.jpg).'
       }
+      ,
+      {
+        subtitle: 'Je ne vois pas le dashboard',
+        text: 'Le dashboard est accessible à tous les plans. Si tu ne le vois pas, recharge la page ou contactez-nous sur WhatsApp.'
+      }
+    ]
+  }
+  ,
+
+  guide: {
+    title: 'Guide utilisateur',
+    sections: [
+      {
+        subtitle: 'Dashboard',
+        text: `Ce que tu vois : tes chiffres clés en un coup d'oeil.
+
+- Commandes en attente : nombre de commandes que tu n'as pas encore confirmées. Quand un client commande, le chiffre augmente. Il redescend quand tu confirmes.
+- CA du mois : le total de tes ventes ce mois-ci en FCFA. Calculé sur les commandes livrées uniquement.
+- Top produit : ton produit le plus vendu ce mois. Ça te dit ce que tes clients préfèrent.
+- Graphique 30 jours : l'évolution de tes ventes jour par jour. Tu vois les pics et les creux.
+
+Astuce : les données se mettent à jour en temps réel. Pas besoin de recharger la page.`
+      },
+      {
+        subtitle: 'Commandes',
+        text: `Ce que tu vois : la liste de toutes les commandes de tes clients.
+
+Les statuts :
+- Nouvelle : le client vient de commander. Tu dois confirmer.
+- Confirmée : tu as validé la commande. Le client est notifié.
+- En livraison : tu as envoyé la commande au livreur.
+- Livrée : le client a reçu sa commande.
+- Annulée : la commande a été annulée.
+
+Comment confirmer une commande :
+1. Clique sur la commande
+2. Vérifie les détails (produits, montant, adresse)
+3. Clique "Confirmer"
+4. Le client reçoit automatiquement un message
+
+Comment envoyer au livreur :
+1. Clique "Envoyer au livreur"
+2. Choisis le livreur dans la liste
+3. Un message WhatsApp pré-rempli s'ouvre avec l'adresse et les détails
+4. Envoie le message à ton livreur
+
+Astuce : traite tes commandes dans les 30 minutes. Un client qui attend trop longtemps risque d'annuler.`
+      },
+      {
+        subtitle: 'Produits',
+        text: `Ce que tu vois : ton catalogue complet avec photos et prix.
+
+Ajouter un produit :
+1. Clique "Ajouter un produit"
+2. Ajoute une photo (bonne qualité, fond clair de préférence)
+3. Nom du produit (court et clair, ex: "Collier cauris doré")
+4. Prix en FCFA
+5. Description (optionnel mais recommandé : décris les matériaux, la taille, etc.)
+6. Clique "Enregistrer"
+
+Modifier un produit :
+- Clique sur le produit dans la liste
+- Modifie les champs que tu veux
+- Clique "Enregistrer"
+
+Gérer les variantes (tailles, couleurs) :
+1. Active "Variantes" sur un produit
+2. Choisis le type : taille, couleur, pointure ou personnalisé
+3. Ajoute chaque option (ex: S, M, L, XL)
+4. Pour chaque option tu peux mettre un prix différent et un stock
+
+Limites par plan :
+- Starter : 30 produits max, 10 modifications/mois
+- Pro : 50 produits max, 25 modifications/mois
+- Premium : illimité
+
+Astuce : tes photos sont la première chose que le client voit. Prends-les en lumière naturelle, sur un fond uni.`
+      },
+      {
+        subtitle: 'Livreurs',
+        text: `Ce que tu vois : la liste de tes livreurs enregistrés.
+
+Ajouter un livreur :
+1. Clique "Ajouter un livreur"
+2. Nom du livreur
+3. Numéro de téléphone (WhatsApp)
+4. Zone de livraison (optionnel)
+
+Limites par plan :
+- Starter : 1 livreur
+- Pro : 3 livreurs
+- Premium : illimité
+
+Comment ça marche :
+Quand tu cliques "Envoyer au livreur" sur une commande, tu choisis dans cette liste. Un message WhatsApp pré-rempli s'ouvre avec l'adresse du client et les détails de la commande.`
+      },
+      {
+        subtitle: 'Prévision IA (Premium uniquement)',
+        text: `Ce que tu vois : des recommandations personnalisées basées sur tes données de vente.
+
+Comment ça marche :
+1. Clique "Actualiser" pour générer de nouvelles recommandations
+2. L'IA analyse tes ventes des 30 derniers jours
+3. Elle te donne des conseils concrets (ex: ton produit se vend mieux le weekend)
+
+Limites :
+- 1 actualisation par 24h (pour éviter les coûts)
+- Plus tu as de ventes, plus les recommandations sont précises
+- Disponible uniquement sur le plan Premium`
+      },
+      {
+        subtitle: 'Paramètres',
+        text: `Informations de la boutique :
+- Nom de la boutique
+- Numéros de paiement (Wave, Orange Money, MTN MoMo)
+- Téléphone de livraison
+
+Changer mon mot de passe :
+1. Déconnecte-toi
+2. Sur la page de connexion, clique "Mot de passe oublié"
+3. Tu recevras un lien de réinitialisation par email`
+      },
+      {
+        subtitle: 'Questions fréquentes',
+        text: `Mon client a payé mais la commande est toujours "en attente" :
+Le paiement se fait hors de la boutique (Wave, Orange Money). Quand tu reçois le paiement, confirme la commande manuellement.
+
+Je veux ajouter plus de produits mais j'ai atteint la limite :
+Tu peux passer au plan supérieur. Contacte-nous sur WhatsApp.
+
+Un client veut annuler sa commande :
+Va dans la commande et clique "Annuler". Le stock est automatiquement restitué.
+
+Mes photos ne s'affichent pas :
+Vérifie que tes fichiers n'ont pas d'espaces ni d'accents dans le nom. Renomme-les si nécessaire (ex: collier-dore.jpg au lieu de Collier Doré.jpg).
+
+Je ne vois pas le dashboard :
+Le dashboard est accessible à tous les plans. Si tu ne le vois pas, recharge la page ou contacte-nous.`
+      },
     ]
   }
 }
@@ -283,14 +422,21 @@ function HelpButton({ section, label, variant }: { section: string; label?: stri
                       lineHeight: 1.5,
                       margin: '6px 0 0 0',
                     }}>
-                      {s.text}
+                      {String(s.text || '').split('\n').map(function(line: string, idx: number) {
+                        return (
+                          <span key={idx}>
+                            {idx > 0 && <br />}
+                            {line}
+                          </span>
+                        )
+                      })}
                     </p>
                   </div>
                 )
               })}
 
               {/* Lien FAQ en bas */}
-              {section !== 'faq' && (
+              {section !== 'faq' && section !== 'guide' && (
                 <button
                   type="button"
                   onClick={function() {

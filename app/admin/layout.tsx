@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {children}
       {pathname !== '/admin/login' && (
         <div style={{ position: 'fixed', bottom: 80, right: 20, zIndex: 100 }}>
-          <HelpButton section="faq" label="Aide et FAQ" variant="floating" />
+          <HelpButton section="guide" label="Guide utilisateur" variant="floating" />
         </div>
       )}
       <SupportButton />

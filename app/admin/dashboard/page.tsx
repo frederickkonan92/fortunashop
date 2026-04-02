@@ -73,10 +73,11 @@ export default function DashboardPage() {
 
   // ── PÉRIODE ──────────────────────────────────────────
   var now = new Date()
-  var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   var startOfWeek = new Date(now)
   startOfWeek.setDate(now.getDate() - 7)
-  var filterDate = period === 'month' ? startOfMonth : startOfWeek
+  // "30j" doit correspondre à une fenêtre glissante sur les 30 derniers jours (cohérent avec le graphique CA 30 jours)
+  var thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  var filterDate = period === 'month' ? thirtyDaysAgo : startOfWeek
 
   // ── COMMANDES ────────────────────────────────────────
   var filteredOrders = orders.filter(function(o) { return new Date(o.created_at) >= filterDate })
