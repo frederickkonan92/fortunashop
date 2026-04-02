@@ -19,6 +19,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
   var cart = useCart()
   var [variantPopup, setVariantPopup] = useState<any>(null)
   var [selectedVariant, setSelectedVariant] = useState<any>(null)
+  var [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   // Sync si les props serveur changent (navigation App Router)
   useEffect(function() {
@@ -81,8 +82,81 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
           Nos créations · {products.length} produit{products.length > 1 ? 's' : ''}
         </p>
 
+        {/* Barre de filtres par catégorie — visible seulement si au moins 2 catégories existent */}
+        {(function() {
+          var categories = Array.from(
+            new Set(
+              products
+                .map(function(p: any) { return p.category })
+                .filter(function(c: any) { return c && c.trim() !== '' })
+            )
+          ).sort() as string[]
+
+          if (categories.length < 2) return null
+
+          return (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              marginBottom: 20,
+              paddingBottom: 16,
+              borderBottom: '1px solid #E8DDD0',
+            }}>
+              <button
+                type="button"
+                onClick={function() { setActiveCategory(null) }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 20,
+                  border: activeCategory === null ? '2px solid #DC5014' : '1px solid #D0C8BC',
+                  background: activeCategory === null ? '#DC5014' : 'white',
+                  color: activeCategory === null ? 'white' : '#5C4A3A',
+                  fontSize: 13,
+                  fontWeight: activeCategory === null ? 700 : 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Tout ({products.length})
+              </button>
+
+              {categories.map(function(cat: string) {
+                var count = products.filter(function(p: any) { return p.category === cat }).length
+                var isActive = activeCategory === cat
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={function() { setActiveCategory(cat) }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 20,
+                      border: isActive ? '2px solid #DC5014' : '1px solid #D0C8BC',
+                      background: isActive ? '#DC5014' : 'white',
+                      color: isActive ? 'white' : '#5C4A3A',
+                      fontSize: 13,
+                      fontWeight: isActive ? 700 : 500,
+                      cursor: 'pointer',
+                      textTransform: 'capitalize',
+                    }}
+                  >
+                    {cat} ({count})
+                  </button>
+                )
+              })}
+            </div>
+          )
+        })()}
+
+        {(function() {
+          var filteredProducts = activeCategory
+            ? products.filter(function(p: any) { return p.category === activeCategory })
+            : products
+
+          return (
+            <>
         <div className="grid grid-cols-2 gap-3">
-          {products.map(function(product) {
+          {filteredProducts.map(function(product) {
             var qty = getItemQty(product.id)
             return (
               <div key={product.id}
@@ -189,12 +263,15 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
           })}
         </div>
 
-        {products.length === 0 && (
+        {filteredProducts.length === 0 && (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">✨</p>
-            <p className="text-fs-gray">Les créations arrivent bientôt...</p>
+            <p className="text-fs-gray">{activeCategory ? 'Aucun produit dans cette categorie' : 'Les créations arrivent bientôt...'}</p>
           </div>
         )}
+            </>
+          )
+        })()}
       </main>
 {/* POPUP SÉLECTION VARIANTE */}
 {variantPopup && (

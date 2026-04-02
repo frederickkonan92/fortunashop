@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: baseUrl + '/confidentialite', lastModified: new Date(), changeFrequency: 'yearly' as const, priority: 0.3 },
     { url: baseUrl + '/suivi', lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.2 },
     { url: baseUrl + '/livraison', lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.2 },
+    { url: baseUrl + '/collecte', lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.3 },
   ]
 
   // Récupère toutes les boutiques actives

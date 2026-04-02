@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Colonnes catalogue + variantes (popup) — évite select('*') et payloads inutiles
 var PRODUCT_CATALOG_SELECT =
-  'id, name, description, price, image_url, stock_quantity, stock_buffer, sort_order, has_variants,' +
+  'id, name, description, price, image_url, stock_quantity, stock_buffer, sort_order, has_variants, category,' +
   'product_variants (' +
   'id, variant_value, is_active, sort_order, stock_quantity, price_override, variant_type' +
   ')'

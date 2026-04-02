@@ -25,6 +25,7 @@ export default function ProduitsPage() {
   stock_quantity: '',
   stock_alert: '3',
   stock_buffer: '0',
+  category: '',
 })
 var [hasVariants, setHasVariants] = useState(false)
 var [variants, setVariants] = useState<any[]>([])
@@ -111,7 +112,7 @@ var uploadImage = async function(file: File) {
 }
 
 var resetForm = function() {
-  setForm({ name: '', price: '', description: '', stock_quantity: '', stock_alert: '3', stock_buffer: '0' })
+  setForm({ name: '', price: '', description: '', stock_quantity: '', stock_alert: '3', stock_buffer: '0', category: '' })
   setEditing(null)
   setShowForm(false)
   setImageFiles([null, null, null])
@@ -130,6 +131,7 @@ var startEdit = async function(product: any) {
     stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
     stock_alert: String(product.stock_alert || 3),
     stock_buffer: String(product.stock_buffer || 0),
+    category: product.category || '',
   })
   setEditing(product)
   setImagePreviews([product.image_url || null, product.image_url_2 || null, product.image_url_3 || null])
@@ -174,6 +176,7 @@ var startEdit = async function(product: any) {
       image_url_2: imageUrl2,
       image_url_3: imageUrl3,
       shop_id: shop.id,
+      category: form.category.trim() || null,
     }
     if (hasAddon(shop?.addons, 'stock')) {
       var bufferQty = parseInt(form.stock_buffer) || 0
@@ -313,6 +316,16 @@ var startEdit = async function(product: any) {
                 <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                           className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange resize-none"
                           placeholder="Ex : Fait main, taille ajustable" />
+              </div>
+              {/* Catégorie du produit — pour organiser le catalogue */}
+              <div>
+                <label className="block text-sm font-semibold mb-1">Categorie (optionnel)</label>
+                <input name="category" type="text" value={form.category} onChange={handleChange}
+                       className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                       placeholder="Ex: homme, femme, bijoux, sacs..." />
+                <p className="text-[11px] text-fs-gray2 mt-1">
+                  Les produits de la meme categorie seront regroupes dans le catalogue
+                </p>
               </div>
              {hasAddon(shop?.addons, 'stock') && (
                 <div className="bg-fs-cream rounded-xl p-4 space-y-3">
@@ -531,6 +544,20 @@ var startEdit = async function(product: any) {
                     {formatPrice(product.price)}
                   </span>
                 </div>
+                {product.category && (
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    borderRadius: 10,
+                    background: '#FFF0E6',
+                    color: '#DC5014',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    marginBottom: 4,
+                  }}>
+                    {product.category}
+                  </span>
+                )}
                 {hasAddon(shop?.addons, 'stock') && product.stock_quantity != null && (
                   <div className="mb-2">
                     <div className="flex items-center gap-2 mb-1">
