@@ -1,5 +1,7 @@
 import { Metadata } from 'next'
 
+import CollecteCheckItem from './collecte-check-item'
+
 export var metadata: Metadata = {
   title: "fortunashop — Ce dont j'ai besoin pour créer ta boutique",
   description: "Guide simple pour préparer la création de ta boutique en ligne fortunashop.",
@@ -8,23 +10,6 @@ export var metadata: Metadata = {
 
 var WA_NUMBER = '33664765696'
 var WA_LINK = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Bonjour fortunashop, je voudrais créer ma boutique en ligne !')
-
-function CheckItem({ text, hint }: { text: string; hint?: string }) {
-  return (
-    <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-      <div style={{
-        width: 22, height: 22, borderRadius: 6, border: '2px solid #DC5014',
-        flexShrink: 0, marginTop: 2,
-      }} />
-      <div>
-        <p style={{ fontSize: 14, fontWeight: 600, color: '#2C1A0E', margin: 0 }}>{text}</p>
-        {hint && (
-          <p style={{ fontSize: 11, color: '#7C6C58', margin: '3px 0 0 0' }}>{hint}</p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function StepCard({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
@@ -87,10 +72,10 @@ export default function CollectePage() {
 
         {/* ÉTAPE 1 — TA MARQUE */}
         <StepCard number={1} title="Ta marque">
-          <CheckItem text="Nom de ta boutique" hint="Le nom affiche sur ton site" />
-          <CheckItem text="Ton logo" hint="Envoie-le en photo. Pas obligatoire" />
-          <CheckItem text="Description de ton activité" hint='1-2 phrases. Ex : "Bijoux artisanaux en or et cauris"' />
-          <CheckItem text="Tes couleurs préférées" hint="Dis-moi 2 couleurs ou envoie un exemple de site que tu aimes" />
+          <CollecteCheckItem id="step1_nom_boutique" text="Nom de ta boutique" hint="Le nom affiche sur ton site" />
+          <CollecteCheckItem id="step1_logo" text="Ton logo" hint="Envoie-le en photo. Pas obligatoire" />
+          <CollecteCheckItem id="step1_description" text="Description de ton activité" hint='1-2 phrases. Ex : "Bijoux artisanaux en or et cauris"' />
+          <CollecteCheckItem id="step1_couleurs" text="Tes couleurs préférées" hint="Dis-moi 2 couleurs ou envoie un exemple de site que tu aimes" />
         </StepCard>
 
         {/* ÉTAPE 2 — TES PRODUITS */}
@@ -112,6 +97,11 @@ export default function CollectePage() {
             <p style={{ fontSize: 14, fontWeight: 700, color: '#2C1A0E', margin: '0 0 10px 0' }}>
               Par WhatsApp directement
             </p>
+            <CollecteCheckItem
+              id="step2_methode_a_envoye"
+              text="J'ai envoyé cette méthode"
+              hint="Moins de 15 produits (Nom/Prix/Catégorie/Tailles + photo)"
+            />
             <div style={{
               background: '#FFF5EE', borderRadius: 10, padding: 14,
               fontSize: 13, color: '#5C4A3A', lineHeight: 1.7,
@@ -140,6 +130,11 @@ export default function CollectePage() {
             <p style={{ fontSize: 14, fontWeight: 700, color: '#2C1A0E', margin: '0 0 10px 0' }}>
               Remplis le tableau que je t'envoie
             </p>
+            <CollecteCheckItem
+              id="step2_methode_b_rempli"
+              text="J'ai rempli cette méthode"
+              hint="15 produits et plus (tableau + demande du lien)"
+            />
             <div style={{
               background: '#FFF5EE', borderRadius: 10, padding: 14,
               fontSize: 12, color: '#5C4A3A', lineHeight: 1.8,
@@ -165,6 +160,16 @@ export default function CollectePage() {
             <p style={{ fontSize: 14, fontWeight: 700, color: '#2C1A0E', margin: '0 0 10px 0' }}>
               Ensuite, envoie les photos
             </p>
+            <CollecteCheckItem
+              id="step2_photos_1"
+              text="Photo 1 envoyée"
+              hint="Une photo par produit (la plus belle)"
+            />
+            <CollecteCheckItem
+              id="step2_photos_2_5"
+              text="Photos 2 à 5 envoyées"
+              hint="Je fais le tri"
+            />
             <div style={{ fontSize: 13, color: '#5C4A3A', lineHeight: 1.7 }}>
               <p style={{ margin: '0 0 6px 0' }}>
                 <strong>Photo 1</strong> — une photo par produit (la plus belle)
@@ -179,23 +184,23 @@ export default function CollectePage() {
 
         {/* ÉTAPE 3 — TES MOYENS DE PAIEMENT */}
         <StepCard number={3} title="Tes moyens de paiement">
-          <CheckItem text="Numéro Wave" hint="Celui sur lequel tes clients t'envoient l'argent" />
-          <CheckItem text="Numéro Orange Money" hint="Optionnel" />
-          <CheckItem text="Numéro MTN MoMo" hint="Optionnel" />
+          <CollecteCheckItem id="step3_wave" text="Numéro Wave" hint="Celui sur lequel tes clients t'envoient l'argent" />
+          <CollecteCheckItem id="step3_orange" text="Numéro Orange Money" hint="Optionnel" />
+          <CollecteCheckItem id="step3_mtn" text="Numéro MTN MoMo" hint="Optionnel" />
         </StepCard>
 
         {/* ÉTAPE 4 — LA LIVRAISON */}
         <StepCard number={4} title="La livraison">
-          <CheckItem text="Tu livres à domicile ?" hint="Oui / Non / Seulement dans certaines zones" />
-          <CheckItem text="Retrait possible ?" hint="Si oui, donne l'adresse" />
-          <CheckItem text="Nom et numéro de ton livreur" hint="Si tu en as un" />
+          <CollecteCheckItem id="step4_domicile" text="Tu livres à domicile ?" hint="Oui / Non / Seulement dans certaines zones" />
+          <CollecteCheckItem id="step4_retrait" text="Retrait possible ?" hint="Si oui, donne l'adresse" />
+          <CollecteCheckItem id="step4_livreur" text="Nom et numéro de ton livreur" hint="Si tu en as un" />
         </StepCard>
 
         {/* ÉTAPE 5 — TES RÉSEAUX SOCIAUX */}
         <StepCard number={5} title="Tes réseaux sociaux">
-          <CheckItem text="Ton Instagram" />
-          <CheckItem text="Ton WhatsApp public" />
-          <CheckItem text="Ta page Facebook" hint="Optionnel" />
+          <CollecteCheckItem id="step5_instagram" text="Ton Instagram" />
+          <CollecteCheckItem id="step5_whatsapp_public" text="Ton WhatsApp public" />
+          <CollecteCheckItem id="step5_facebook" text="Ta page Facebook" hint="Optionnel" />
         </StepCard>
 
         {/* ASTUCES */}
