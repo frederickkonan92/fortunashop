@@ -55,9 +55,13 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
 
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white border-b border-fs-border px-4 py-3 flex items-center gap-3 shadow-sm">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-fs-orange to-fs-orange-deep flex items-center justify-center text-white font-nunito font-black text-lg shrink-0">
-          {shop.name[0]}
-        </div>
+        {shop.logo_url ? (
+          <img src={shop.logo_url} alt={shop.name} style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'contain' }} />
+        ) : (
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: '#DC5014', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 20 }}>
+            {shop.name?.charAt(0)}
+          </div>
+        )}
         <div className="min-w-0">
           <h1 className="font-nunito font-extrabold text-base truncate">{shop.name}</h1>
           <p className="text-xs text-fs-gray truncate">{shop.description}</p>

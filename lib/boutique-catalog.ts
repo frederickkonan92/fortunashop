@@ -10,7 +10,7 @@ var PRODUCT_CATALOG_SELECT =
 export async function fetchBoutiqueCatalog(supabase: SupabaseClient, slug: string) {
   var shopRes = await supabase
     .from('shops')
-    .select('id, name, description, slug, is_active')
+    .select('id, name, description, slug, is_active, logo_url')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle()
