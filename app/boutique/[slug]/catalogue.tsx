@@ -305,13 +305,10 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                       {product.description}
                     </p>
                   )}
-                  <div style={{ fontSize: 14, fontWeight: 600, color: theme.primary }}>
-                    {formatPrice(product.price)}
-                  </div>
 
                   {/* BADGES VARIANTES */}
                   {product.has_variants && product.product_variants && product.product_variants.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
                       {product.product_variants
                         .filter(function(v: any) { return v.is_active })
                         .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
@@ -334,72 +331,37 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                 </div>
               </a>
 
-              {/* ZONE BOUTONS : hors du <a> → pas de redirection au clic */}
-              <div style={{ padding: '8px 14px 14px' }}>
-                {qty === 0 ? (
-                  <button
-                    onClick={function() {
-                      if (product.has_variants && product.product_variants?.length > 0) {
-                        setSelectedVariant(null)
-                        setVariantPopup(product)
-                      } else {
-                        handleAdd(product)
-                      }
-                    }}
-                    style={{
-                      width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 700,
-                      padding: '10px 0', borderRadius: 12, border: 'none', cursor: 'pointer',
-                      background: theme.primary, color: getContrastText(theme.primary),
-                      transition: 'filter 0.2s',
-                      fontFamily: 'var(--font-outfit), sans-serif',
-                    }}
-                    onMouseEnter={function(e: any) { e.currentTarget.style.filter = 'brightness(1.1)' }}
-                    onMouseLeave={function(e: any) { e.currentTarget.style.filter = 'brightness(1)' }}
-                  >
-                    Ajouter
-                  </button>
-                ) : (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    borderRadius: 12, padding: '4px 6px',
-                    background: theme.secondary,
-                  }}>
-                    {/* Bouton - : réduit la quantité, supprime si 0 */}
-                    <button
-                      onClick={function(e) {
-                        e.stopPropagation()
-                        e.preventDefault()
-                        cart.updateQuantity(product.id, qty - 1)
-                      }}
-                      style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: 'white', border: 'none', cursor: 'pointer',
-                        fontWeight: 700, fontSize: 14, color: theme.text,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                      }}>
-                      −
-                    </button>
-                    <span style={{ fontWeight: 700, fontSize: 14, color: theme.text }}>{qty}</span>
-                    {/* Bouton + : augmente, respecte le stock max */}
-                    <button onClick={function() {
-                      // Stock disponible en ligne = stock total - tampon physique
-                      var stockOnline = product.stock_quantity != null
-                        ? Math.max(0, product.stock_quantity - (product.stock_buffer || 0))
-                        : 999
-                      cart.updateQuantity(product.id, Math.min(qty + 1, stockOnline))
-                    }}
-                      style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: theme.text, color: getContrastText(theme.text),
-                        border: 'none', cursor: 'pointer',
-                        fontWeight: 700, fontSize: 14,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                      +
-                    </button>
-                  </div>
-                )}
+              {/* Prix + bouton "+" alignés */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '0 14px 14px',
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: theme.primary }}>
+                  {formatPrice(product.price)}
+                </div>
+                <button type="button"
+                  onClick={function(e: any) {
+                    e.stopPropagation()
+                    if (product.has_variants && product.product_variants?.length > 0) {
+                      setSelectedVariant(null)
+                      setVariantPopup(product)
+                    } else {
+                      handleAdd(product)
+                    }
+                  }}
+                  style={{
+                    width: 30, height: 30, borderRadius: 8,
+                    background: theme.primary, border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'background 0.2s, transform 0.15s',
+                  }}
+                  onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.08)' }}
+                  onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
               </div>
             </div>
           )
