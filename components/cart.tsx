@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { formatPrice } from '@/lib/utils'
 import Link from 'next/link'
+import { getContrastText } from '@/lib/theme'
 
 export function useCart() {
   const [items, setItems] = useState<any[]>([])
@@ -55,8 +56,41 @@ export function useCart() {
   return { items, addItem, removeItem, updateQuantity, clearCart, total, count }
 }
 
-export function CartBar({ count, total, slug }: { count: number, total: number, slug: string }) {
+export function CartBar(props: {
+  count: number
+  total: number
+  slug: string
+  /** Si défini : barre avec fond couleur primaire du thème boutique */
+  themePrimary?: string
+  themeAccent?: string
+}) {
+  var count = props.count
+  var total = props.total
+  var slug = props.slug
+  var themePrimary = props.themePrimary
+  var themeAccent = props.themeAccent
+
   if (count === 0) return null
+
+  if (themePrimary) {
+    var accent = themeAccent || '#F07832'
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-4 py-3 shadow-lg" style={{ background: themePrimary }}>
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <div style={{ color: getContrastText(themePrimary) }}>
+            <span className="font-bold">{count} article{count > 1 ? 's' : ''}</span>
+            <span className="text-fs-gray2 mx-2">·</span>
+            <span className="font-nunito font-extrabold" style={{ color: accent }}>{formatPrice(total)}</span>
+          </div>
+          <Link href={'/boutique/' + slug + '/commander'}
+                className="font-bold text-sm px-5 py-2.5 rounded-xl transition"
+                style={{ background: accent, color: getContrastText(accent) }}>
+            Commander
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-fs-ink px-4 py-3 shadow-lg">

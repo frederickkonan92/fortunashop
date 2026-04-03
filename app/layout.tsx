@@ -1,5 +1,5 @@
 import './globals.css'
-import { Nunito, DM_Sans } from 'next/font/google'
+import { Nunito, DM_Sans, Cormorant_Garamond, Outfit } from 'next/font/google'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -11,6 +11,20 @@ const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-dm',
+})
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-cormorant',
+  display: 'swap',
+})
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-outfit',
+  display: 'swap',
 })
 
 export const metadata = {
@@ -41,7 +55,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${nunito.variable} ${dmSans.variable}`}>
+    <html lang="fr" className={`${nunito.variable} ${dmSans.variable} ${cormorant.variable} ${outfit.variable}`}>
       <head />
       {/* Le <head> est vide : Next.js injecte automatiquement les favicon depuis metadata.icons */}
       <body className="font-dm bg-fs-cream text-fs-ink antialiased">

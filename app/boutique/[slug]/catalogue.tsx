@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { formatPrice } from '@/lib/utils'
 import PageTracker from '@/components/tracker'
-import { useCart, CartBar } from '@/components/cart'
+import { useCart } from '@/components/cart'
 import Link from 'next/link'
+import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
 
 type CatalogueProps = {
   slug: string
@@ -48,236 +49,388 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
     return item ? item.quantity : 0
   }
 
+  var theme = getThemeColors(shop)
+
+  // Extraire les catégories pour les filtres
+  var categories = Array.from(
+    new Set(
+      products
+        .map(function(p: any) { return p.category })
+        .filter(function(c: any) { return c && c.trim() !== '' })
+    )
+  ).sort() as string[]
+
+  var filteredProducts = activeCategory
+    ? products.filter(function(p: any) { return p.category === activeCategory })
+    : products
+
+  var cartCount = cart.count
+  var cartTotal = cart.total
+
   return (
-    // pb-32 : espace en bas pour que la CartBar ne cache pas les produits
-    <div className="min-h-screen bg-fs-cream pb-32">
+    <div className="min-h-screen pb-32" style={{ background: theme.secondary }}>
       <PageTracker shopId={shop.id} page="catalogue" />
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-white border-b border-fs-border px-4 py-3 flex items-center gap-3 shadow-sm">
-        {shop.logo_url ? (
-          <img src={shop.logo_url} alt={shop.name} style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'cover', objectPosition: 'center', display: 'block', border: '1.5px solid #E8DDD0' }} />
-        ) : (
-          <div style={{ width: 72, height: 72, borderRadius: 16, background: '#DC5014', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 28 }}>
-            {shop.name?.charAt(0)}
+      {/* ÉTAPE 1 — Header boutique redesigné */}
+      <header style={{
+        background: theme.primary,
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Logo ou initiale */}
+          {shop.logo_url ? (
+            <img src={shop.logo_url} alt={shop.name}
+              style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'contain', background: 'white', padding: 3 }} />
+          ) : (
+            <div style={{
+              width: 44, height: 44, borderRadius: 10,
+              background: theme.accent, color: theme.primary,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'var(--font-cormorant), serif', fontSize: 22, fontWeight: 600,
+            }}>
+              {shop.name?.charAt(0)}
+            </div>
+          )}
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-cormorant), serif', fontSize: 18, fontWeight: 600,
+              color: getContrastText(theme.primary), letterSpacing: 0.5,
+            }}>
+              {shop.name}
+            </div>
+            {shop.description && (
+              <div style={{
+                fontSize: 11, color: 'rgba(255,255,255,0.6)',
+                letterSpacing: 1, textTransform: 'uppercase', marginTop: 1,
+                maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {shop.description}
+              </div>
+            )}
           </div>
-        )}
-        <div className="min-w-0">
-          <h1 className="font-nunito font-extrabold text-base truncate">{shop.name}</h1>
-          <p className="text-xs text-fs-gray truncate">{shop.description}</p>
         </div>
-        <div className="ml-auto flex items-center gap-1.5 shrink-0">
-          <span className="w-2 h-2 bg-fs-green rounded-full animate-pulse" />
-          <span className="text-xs font-bold text-fs-green">En ligne</span>
+        {/* Badge en ligne */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontSize: 11, color: 'rgba(255,255,255,0.7)',
+        }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
+          En ligne
         </div>
       </header>
 
-      {/* BANNIÈRE ACCUEIL */}
-      <div className="bg-gradient-to-br from-fs-orange-pale to-fs-cream2 px-5 py-6 border-b border-fs-border">
-        <h2 className="font-nunito font-extrabold text-lg mb-1">Bienvenue chez {shop.name} 👋</h2>
-        <p className="text-sm text-fs-gray leading-relaxed">
-          Parcourez nos créations et commandez directement en ligne.
+      {/* ÉTAPE 2 — Section Hero */}
+      <section style={{
+        background: theme.primary,
+        padding: '48px 24px 40px',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Cercle décoratif subtil */}
+        <div style={{
+          position: 'absolute', top: -60, right: -60,
+          width: 200, height: 200, borderRadius: '50%',
+          border: '1px solid ' + getLightColor(theme.accent, 0.15),
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          fontSize: 10, letterSpacing: 3, textTransform: 'uppercase',
+          color: theme.accent, marginBottom: 16, fontWeight: 500,
+          fontFamily: 'var(--font-outfit), sans-serif',
+        }}>
+          {shop.hero_subtitle || 'Boutique en ligne'}
+        </div>
+        <h1 style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: 28, fontWeight: 300, lineHeight: 1.2,
+          color: getContrastText(theme.primary),
+          marginBottom: 10, letterSpacing: 0.5,
+        }}>
+          {shop.hero_title || ('Bienvenue chez ' + shop.name)}
+        </h1>
+        <p style={{
+          fontSize: 13, color: 'rgba(255,255,255,0.55)',
+          maxWidth: 340, margin: '0 auto', lineHeight: 1.6,
+          fontFamily: 'var(--font-outfit), sans-serif',
+        }}>
+          Parcourez nos creations et commandez directement en ligne
         </p>
+        {/* Ligne décorative */}
+        <div style={{
+          width: 40, height: 1,
+          background: theme.accent, margin: '20px auto 0', opacity: 0.4,
+        }} />
+      </section>
+
+      {/* ÉTAPE 3 — Barre de filtres redesignée */}
+      {categories.length >= 2 && (
+        <div style={{
+          padding: '20px 20px 0', background: theme.secondary,
+        }}>
+          <div style={{
+            display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 16,
+            borderBottom: '1px solid #E8DDD0',
+          }}>
+            {/* Bouton Tout */}
+            <button type="button" onClick={function() { setActiveCategory(null) }}
+              style={{
+                padding: '8px 18px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.3s',
+                border: activeCategory === null ? 'none' : '1px solid #E8DDD0',
+                background: activeCategory === null ? theme.primary : 'white',
+                color: activeCategory === null ? getContrastText(theme.primary) : '#7C6C58',
+                fontFamily: 'var(--font-outfit), sans-serif',
+              }}>
+              Tout ({products.length})
+            </button>
+            {categories.map(function(cat: string) {
+              var count = products.filter(function(p: any) { return p.category === cat }).length
+              var isActive = activeCategory === cat
+              return (
+                <button key={cat} type="button" onClick={function() { setActiveCategory(cat) }}
+                  style={{
+                    padding: '8px 18px', borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    whiteSpace: 'nowrap', cursor: 'pointer', transition: 'all 0.3s',
+                    border: isActive ? 'none' : '1px solid #E8DDD0',
+                    background: isActive ? theme.primary : 'white',
+                    color: isActive ? getContrastText(theme.primary) : '#7C6C58',
+                    fontFamily: 'var(--font-outfit), sans-serif',
+                    textTransform: 'capitalize',
+                  }}>
+                  {cat} ({count})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ÉTAPE 7 — Section titre catalogue */}
+      <div style={{
+        padding: '20px 20px 12px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: 18, fontWeight: 600, color: theme.text,
+        }}>
+          Nos creations
+        </div>
+        <div style={{
+          fontSize: 11, color: '#7C6C58',
+          letterSpacing: 1, textTransform: 'uppercase',
+        }}>
+          {filteredProducts.length} {filteredProducts.length > 1 ? 'pieces' : 'piece'}
+        </div>
       </div>
 
-      {/* GRILLE PRODUITS */}
-      <main className="px-4 py-5">
-        <p className="text-[11px] font-bold tracking-[1.5px] uppercase text-fs-gray mb-4">
-          Nos créations · {products.length} produit{products.length > 1 ? 's' : ''}
-        </p>
-
-        {/* Barre de filtres par catégorie — visible seulement si au moins 2 catégories existent */}
-        {(function() {
-          var categories = Array.from(
-            new Set(
-              products
-                .map(function(p: any) { return p.category })
-                .filter(function(c: any) { return c && c.trim() !== '' })
-            )
-          ).sort() as string[]
-
-          if (categories.length < 2) return null
-
+      {/* ÉTAPE 4 — Cartes produit redesignées */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: 14,
+        padding: '0 20px 24px',
+      }}>
+        {filteredProducts.map(function(product: any) {
+          var qty = getItemQty(product.id)
           return (
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              marginBottom: 20,
-              paddingBottom: 16,
-              borderBottom: '1px solid #E8DDD0',
-            }}>
-              <button
-                type="button"
-                onClick={function() { setActiveCategory(null) }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 20,
-                  border: activeCategory === null ? '2px solid #DC5014' : '1px solid #D0C8BC',
-                  background: activeCategory === null ? '#DC5014' : 'white',
-                  color: activeCategory === null ? 'white' : '#5C4A3A',
-                  fontSize: 13,
-                  fontWeight: activeCategory === null ? 700 : 500,
-                  cursor: 'pointer',
-                }}
-              >
-                Tout ({products.length})
-              </button>
-
-              {categories.map(function(cat: string) {
-                var count = products.filter(function(p: any) { return p.category === cat }).length
-                var isActive = activeCategory === cat
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={function() { setActiveCategory(cat) }}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: 20,
-                      border: isActive ? '2px solid #DC5014' : '1px solid #D0C8BC',
-                      background: isActive ? '#DC5014' : 'white',
-                      color: isActive ? 'white' : '#5C4A3A',
-                      fontSize: 13,
-                      fontWeight: isActive ? 700 : 500,
-                      cursor: 'pointer',
-                      textTransform: 'capitalize',
-                    }}
-                  >
-                    {cat} ({count})
-                  </button>
-                )
-              })}
-            </div>
-          )
-        })()}
-
-        {(function() {
-          var filteredProducts = activeCategory
-            ? products.filter(function(p: any) { return p.category === activeCategory })
-            : products
-
-          return (
-            <>
-        <div className="grid grid-cols-2 gap-3">
-          {filteredProducts.map(function(product) {
-            var qty = getItemQty(product.id)
-            return (
-              <div key={product.id}
-                className="bg-white border border-fs-border rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200">
-
-                {/* ZONE CLIQUABLE : image + infos uniquement */}
-                <a href={'/boutique/' + shop.slug + '/produit/' + product.id} className="block">
-                  <div className="aspect-square bg-fs-cream relative flex items-center justify-center">
-                    {product.image_url ? (
-                      product.image_url.indexOf('images.unsplash.com') !== -1 ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <Image
-                          src={product.image_url}
-                          alt={product.name}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 640px) 50vw, 200px"
-                        />
-                      )
+            <div key={product.id}
+              style={{
+                background: 'white', borderRadius: 14, overflow: 'hidden',
+                border: '1px solid #E8DDD0', cursor: 'pointer',
+                transition: 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.35s',
+              }}
+              onMouseEnter={function(e: any) {
+                e.currentTarget.style.transform = 'translateY(-6px)'
+                e.currentTarget.style.boxShadow = '0 16px 40px ' + getLightColor(theme.primary, 0.1)
+              }}
+              onMouseLeave={function(e: any) {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              {/* ZONE CLIQUABLE : image + infos */}
+              <a href={'/boutique/' + shop.slug + '/produit/' + product.id} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                {/* Image produit */}
+                <div style={{ height: 180, background: '#F5EDE5', position: 'relative', overflow: 'hidden' }}>
+                  {product.image_url ? (
+                    product.image_url.indexOf('images.unsplash.com') !== -1 ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        loading="lazy" />
                     ) : (
-                      <span className="text-5xl">🛍️</span>
-                    )}
-                  </div>
-                  <div className="p-3 pb-0">
-                    <p className="font-semibold text-[13px] leading-tight mb-1 line-clamp-2">{product.name}</p>
-                    {product.description && (
-                      <p className="text-xs text-fs-gray mb-1 line-clamp-2">{product.description}</p>
-                    )}
-                    <p className="font-nunito font-extrabold text-sm text-fs-orange">{formatPrice(product.price)}</p>
-
-                    {/* BADGES VARIANTES */}
-                    {product.has_variants && product.product_variants && product.product_variants.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {product.product_variants
-                          .filter(function(v: any) { return v.is_active })
-                          .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
-                          .map(function(v: any) {
-                            var isOut = v.stock_quantity != null && v.stock_quantity <= 0
-                            return (
-                              <span key={v.id}
-                                    className={'text-[10px] px-1.5 py-0.5 rounded border ' +
-                                      (isOut
-                                        ? 'border-fs-border text-fs-border line-through'
-                                        : 'border-fs-gray2 text-fs-gray2')}>
-                                {v.variant_value}
-                              </span>
-                            )
-                          })}
-                      </div>
-                    )}
-                  </div>
-                </a>
-
-                {/* ZONE BOUTONS : hors du <a> → pas de redirection au clic */}
-                <div className="p-3 pt-2">
-                {qty === 0 ? (
-                    <button
-                      onClick={function() {
-                        if (product.has_variants && product.product_variants?.length > 0) {
-                          setSelectedVariant(null)
-                          setVariantPopup(product)
-                        } else {
-                          handleAdd(product)
-                        }
-                      }}
-                      className="w-full bg-fs-ink text-white text-center text-xs font-bold py-2.5 rounded-xl hover:bg-fs-orange transition">
-                      Ajouter
-                    </button>
+                      <Image
+                        src={product.image_url}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 50vw, 200px"
+                      />
+                    )
                   ) : (
-                    <div className="flex items-center justify-between bg-fs-cream rounded-xl px-2 py-1.5">
-                      {/* Bouton - : réduit la quantité, supprime si 0 */}
-                      <button
-                        onClick={function(e) {
-                          e.stopPropagation()
-                          e.preventDefault()
-                          cart.updateQuantity(product.id, qty - 1)
-                        }}
-                        className="w-8 h-8 rounded-lg bg-white text-fs-ink font-bold text-sm flex items-center justify-center shadow-sm">
-                        −
-                      </button>
-                      <span className="font-bold text-sm">{qty}</span>
-                      {/* Bouton + : augmente, respecte le stock max */}
-                      <button onClick={function() {
-                        // Stock disponible en ligne = stock total - tampon physique
-                        var stockOnline = product.stock_quantity != null
-                          ? Math.max(0, product.stock_quantity - (product.stock_buffer || 0))
-                          : 999
-                        cart.updateQuantity(product.id, Math.min(qty + 1, stockOnline))
-                      }}
-                        className="w-8 h-8 rounded-lg bg-fs-ink text-white font-bold text-sm flex items-center justify-center">
-                        +
-                      </button>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#CCC', fontSize: 13 }}>
+                      Photo
+                    </div>
+                  )}
+                  {/* Badge catégorie */}
+                  {product.category && (
+                    <span style={{
+                      position: 'absolute', top: 10, left: 10,
+                      padding: '3px 10px', borderRadius: 10,
+                      fontSize: 9, fontWeight: 600, letterSpacing: 0.5,
+                      textTransform: 'uppercase',
+                      background: theme.primary, color: getContrastText(theme.primary),
+                    }}>
+                      {product.category}
+                    </span>
+                  )}
+                </div>
+                {/* Body */}
+                <div style={{ padding: '12px 14px 8px' }}>
+                  <div style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontSize: 15, fontWeight: 600, color: theme.text,
+                    lineHeight: 1.3, marginBottom: 6,
+                  }}>
+                    {product.name}
+                  </div>
+                  {product.description && (
+                    <p style={{ fontSize: 11, color: '#7C6C58', marginBottom: 6, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {product.description}
+                    </p>
+                  )}
+                  <div style={{ fontSize: 14, fontWeight: 600, color: theme.primary }}>
+                    {formatPrice(product.price)}
+                  </div>
+
+                  {/* BADGES VARIANTES */}
+                  {product.has_variants && product.product_variants && product.product_variants.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                      {product.product_variants
+                        .filter(function(v: any) { return v.is_active })
+                        .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
+                        .map(function(v: any) {
+                          var isOut = v.stock_quantity != null && v.stock_quantity <= 0
+                          return (
+                            <span key={v.id}
+                                  style={{
+                                    fontSize: 10, padding: '2px 6px', borderRadius: 4,
+                                    border: '1px solid ' + (isOut ? '#E8DDD0' : '#D0C8BC'),
+                                    color: isOut ? '#E8DDD0' : '#7C6C58',
+                                    textDecoration: isOut ? 'line-through' : 'none',
+                                  }}>
+                              {v.variant_value}
+                            </span>
+                          )
+                        })}
                     </div>
                   )}
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              </a>
 
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">✨</p>
-            <p className="text-fs-gray">{activeCategory ? 'Aucun produit dans cette categorie' : 'Les créations arrivent bientôt...'}</p>
-          </div>
-        )}
-            </>
+              {/* ZONE BOUTONS : hors du <a> → pas de redirection au clic */}
+              <div style={{ padding: '8px 14px 14px' }}>
+                {qty === 0 ? (
+                  <button
+                    onClick={function() {
+                      if (product.has_variants && product.product_variants?.length > 0) {
+                        setSelectedVariant(null)
+                        setVariantPopup(product)
+                      } else {
+                        handleAdd(product)
+                      }
+                    }}
+                    style={{
+                      width: '100%', textAlign: 'center', fontSize: 12, fontWeight: 700,
+                      padding: '10px 0', borderRadius: 12, border: 'none', cursor: 'pointer',
+                      background: theme.primary, color: getContrastText(theme.primary),
+                      transition: 'filter 0.2s',
+                      fontFamily: 'var(--font-outfit), sans-serif',
+                    }}
+                    onMouseEnter={function(e: any) { e.currentTarget.style.filter = 'brightness(1.1)' }}
+                    onMouseLeave={function(e: any) { e.currentTarget.style.filter = 'brightness(1)' }}
+                  >
+                    Ajouter
+                  </button>
+                ) : (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    borderRadius: 12, padding: '4px 6px',
+                    background: theme.secondary,
+                  }}>
+                    {/* Bouton - : réduit la quantité, supprime si 0 */}
+                    <button
+                      onClick={function(e) {
+                        e.stopPropagation()
+                        e.preventDefault()
+                        cart.updateQuantity(product.id, qty - 1)
+                      }}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8,
+                        background: 'white', border: 'none', cursor: 'pointer',
+                        fontWeight: 700, fontSize: 14, color: theme.text,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                      }}>
+                      −
+                    </button>
+                    <span style={{ fontWeight: 700, fontSize: 14, color: theme.text }}>{qty}</span>
+                    {/* Bouton + : augmente, respecte le stock max */}
+                    <button onClick={function() {
+                      // Stock disponible en ligne = stock total - tampon physique
+                      var stockOnline = product.stock_quantity != null
+                        ? Math.max(0, product.stock_quantity - (product.stock_buffer || 0))
+                        : 999
+                      cart.updateQuantity(product.id, Math.min(qty + 1, stockOnline))
+                    }}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8,
+                        background: theme.text, color: getContrastText(theme.text),
+                        border: 'none', cursor: 'pointer',
+                        fontWeight: 700, fontSize: 14,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                      +
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           )
-        })()}
-      </main>
-{/* POPUP SÉLECTION VARIANTE */}
+        })}
+      </div>
+
+      {/* ÉTAPE 8 — Message produits vides redesigné */}
+      {filteredProducts.length === 0 && (
+        <div style={{
+          textAlign: 'center', padding: '60px 20px',
+          color: '#7C6C58',
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>
+            {activeCategory ? '( )' : '...'}
+          </div>
+          <p style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: 18, fontWeight: 500, marginBottom: 8, color: theme.text,
+          }}>
+            {activeCategory ? 'Aucun produit dans cette categorie' : 'Les creations arrivent bientot'}
+          </p>
+          <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+            {activeCategory
+              ? 'Essayez une autre categorie ou revenez bientot'
+              : 'Nous preparons notre catalogue avec soin'
+            }
+          </p>
+        </div>
+      )}
+
+      {/* POPUP SÉLECTION VARIANTE */}
 {variantPopup && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center"
@@ -317,11 +470,18 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                     <button key={v.id}
                             disabled={isOut}
                             onClick={function() { setSelectedVariant(isSelected ? null : v) }}
+                            style={
+                              isOut
+                                ? undefined
+                                : isSelected
+                                  ? { background: theme.primary, borderColor: theme.primary, color: getContrastText(theme.primary) }
+                                  : undefined
+                            }
                             className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
                               (isOut
                                 ? 'border-fs-border text-fs-border line-through cursor-not-allowed'
                                 : isSelected
-                                  ? 'border-fs-orange bg-fs-orange text-white'
+                                  ? ''
                                   : 'border-fs-border text-fs-ink hover:border-fs-orange')}>
                       {v.variant_value}
                       {v.stock_quantity != null && v.stock_quantity > 0 && v.stock_quantity <= 3 && (
@@ -349,7 +509,8 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                 setVariantPopup(null)
                 setSelectedVariant(null)
               }}
-              className="w-full bg-fs-orange text-white font-bold py-3.5 rounded-xl transition disabled:opacity-40">
+              className="w-full font-bold py-3.5 rounded-xl transition disabled:opacity-40"
+              style={{ background: theme.primary, color: getContrastText(theme.primary) }}>
               {selectedVariant
                 ? 'Ajouter au panier — ' + (selectedVariant.price_override
                     ? new Intl.NumberFormat('fr-FR').format(selectedVariant.price_override) + ' FCFA'
@@ -359,15 +520,88 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
           </div>
         </div>
       )}
-      {/* FOOTER */}
-      <footer className="bg-fs-cream2 border-t border-fs-border py-5 text-center">
-        <p className="text-sm text-fs-gray">
-          Propulsé par <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer" className="text-fs-orange font-bold hover:underline">fortunashop</a>
-        </p>
+
+      {/* ÉTAPE 6 — Footer enrichi */}
+      <footer style={{
+        background: getLightColor(theme.primary, 0.04),
+        padding: '24px 20px',
+        borderTop: '1px solid #E8DDD0',
+      }}>
+        {/* Réseaux sociaux de l'artisan (si renseignés) */}
+        {(shop.social_instagram || shop.social_facebook || shop.social_whatsapp) && (
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16,
+          }}>
+            {shop.social_instagram && (
+              <a href={shop.social_instagram.startsWith('http') ? shop.social_instagram : 'https://instagram.com/' + shop.social_instagram}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color: theme.primary, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                Instagram
+              </a>
+            )}
+            {shop.social_whatsapp && (
+              <a href={'https://wa.me/' + shop.social_whatsapp.replace(/[^0-9+]/g, '')}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color: theme.primary, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                WhatsApp
+              </a>
+            )}
+            {shop.social_facebook && (
+              <a href={shop.social_facebook.startsWith('http') ? shop.social_facebook : 'https://facebook.com/' + shop.social_facebook}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color: theme.primary, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                Facebook
+              </a>
+            )}
+          </div>
+        )}
+        {/* Propulsé par fortunashop */}
+        <div style={{ textAlign: 'center' }}>
+          <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, color: '#7C6C58', textDecoration: 'none' }}>
+            Propulse par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
+          </a>
+        </div>
       </footer>
 
-      {/* BARRE PANIER FIXE EN BAS — z-50 pour passer au-dessus du contenu */}
-      <CartBar count={cart.count} total={cart.total} slug={slug} />
+      {/* ÉTAPE 5 — Barre panier redesignée */}
+      {cartCount > 0 && (
+        <Link href={'/boutique/' + slug + '/commander'}
+          style={{
+            position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+            width: 'calc(100% - 40px)', maxWidth: 440,
+            background: theme.primary, borderRadius: 14,
+            padding: '14px 18px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            boxShadow: '0 8px 24px ' + getLightColor(theme.primary, 0.25),
+            cursor: 'pointer', zIndex: 50,
+            textDecoration: 'none',
+          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: theme.accent, color: theme.primary,
+              fontSize: 12, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {cartCount}
+            </div>
+            <div style={{
+              fontSize: 13, color: getContrastText(theme.primary), fontWeight: 500,
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>
+              Voir le panier
+            </div>
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: 18, fontWeight: 600,
+            color: theme.accent,
+          }}>
+            {formatPrice(cartTotal)}
+          </div>
+        </Link>
+      )}
     </div>
   )
 }

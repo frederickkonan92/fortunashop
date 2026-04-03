@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
 import { formatPrice } from '@/lib/utils'
 import { isStatusFinal } from '@/lib/order-status'
+import { getThemeColors, getContrastText } from '@/lib/theme'
 
 function isSuiviTerminal(status: string, deliveryMode: string) {
   if (isStatusFinal(status)) return true
@@ -34,7 +35,7 @@ export default function SuiviContent() {
     var loadOrder = async function() {
       var orderRes = await supabase
         .from('orders')
-        .select('*, order_items(*), shops(name, description)')
+        .select('*, order_items(*), shops(name, description, primary_color, secondary_color, accent_color, text_color)')
         .eq('order_number', cmd)
         .maybeSingle()
 
@@ -56,7 +57,7 @@ export default function SuiviContent() {
           setShop(emb[0])
         } else {
           var shopRes = await supabase
-            .from('shops').select('name, description')
+            .from('shops').select('name, description, primary_color, secondary_color, accent_color, text_color')
             .eq('id', row.shop_id).single()
           setShop(shopRes.data)
         }
@@ -142,12 +143,14 @@ export default function SuiviContent() {
     ? 'Statut final — plus de mise à jour automatique'
     : 'Cette page se met à jour automatiquement toutes les 30 secondes (uniquement si l’onglet est visible)'
 
+  var theme = getThemeColors(shop)
+
   return (
-    <div className="min-h-screen bg-fs-cream">
+    <div className="min-h-screen" style={{ background: theme.secondary }}>
       <header className="bg-white border-b border-fs-border px-4 py-4 text-center">
         <p className="text-xs text-fs-gray">Suivi de commande</p>
-        <h1 className="font-nunito font-extrabold text-lg">{order.order_number}</h1>
-        {shop && <p className="text-xs text-fs-orange font-semibold">{shop.name}</p>}
+        <h1 className="font-nunito font-extrabold text-lg" style={{ color: theme.text }}>{order.order_number}</h1>
+        {shop && <p className="text-xs font-semibold" style={{ color: theme.primary }}>{shop.name}</p>}
       </header>
 
       <div className="px-4 py-6 max-w-md mx-auto">
@@ -161,16 +164,19 @@ export default function SuiviContent() {
                 <div key={step.key} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className={'w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 transition-all duration-500 ' +
-                      (isDone ? 'bg-fs-orange text-white' : 'bg-fs-cream2 text-fs-gray2')}>
+                      (isDone ? '' : 'bg-fs-cream2 text-fs-gray2')}
+                      style={isDone ? { background: theme.primary, color: getContrastText(theme.primary) } : undefined}>
                       {step.icon}
                     </div>
                     {!isLast && (
                       <div className={'w-0.5 h-8 mt-1 transition-all duration-500 ' +
-                        (index < currentIndex ? 'bg-fs-orange' : 'bg-fs-border')} />
+                        (index < currentIndex ? '' : 'bg-fs-border')}
+                        style={index < currentIndex ? { background: theme.primary } : undefined} />
                     )}
                   </div>
                   <div className="pt-1.5">
-                    <p className={'text-sm font-bold ' + (isDone ? 'text-fs-ink' : 'text-fs-gray2')}>
+                    <p className={'text-sm font-bold ' + (isDone ? '' : 'text-fs-gray2')}
+                      style={isDone ? { color: theme.text } : undefined}>
                       {step.label}
                     </p>
                     <p className={'text-xs mt-0.5 ' + (isDone ? 'text-fs-gray' : 'text-fs-gray2')}>
@@ -178,8 +184,8 @@ export default function SuiviContent() {
                     </p>
                     {isCurrent && (
                       <div className="flex items-center gap-1.5 mt-2">
-                        <span className="w-2 h-2 bg-fs-orange rounded-full animate-pulse" />
-                        <span className="text-xs font-semibold text-fs-orange">En cours</span>
+                        <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: theme.primary }} />
+                        <span className="text-xs font-semibold" style={{ color: theme.primary }}>En cours</span>
                       </div>
                     )}
                   </div>
@@ -207,7 +213,7 @@ export default function SuiviContent() {
           </div>
           <div className="flex justify-between text-sm pt-2 border-t border-fs-border">
             <span className="text-fs-gray">Total</span>
-            <span className="font-nunito font-extrabold text-fs-orange">{formatPrice(order.total)}</span>
+            <span className="font-nunito font-extrabold" style={{ color: theme.primary }}>{formatPrice(order.total)}</span>
           </div>
         </div>
 

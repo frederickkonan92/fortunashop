@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams } from 'next/navigation'
+import { getThemeColors } from '@/lib/theme'
 
 export default function LivraisonContent() {
   var searchParams = useSearchParams()
@@ -70,14 +71,15 @@ export default function LivraisonContent() {
   }
 
   if (status === 'confirmed') {
+    var themeConfirmed = getThemeColors(shop)
     var clientMsg = 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' de ' + (shop?.name || 'la boutique') + ' a ete livree avec succes ! Merci pour votre achat.'
     var clientWaLink = 'https://wa.me/' + order.customer_phone + '?text=' + encodeURIComponent(clientMsg)
 
     return (
-      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: themeConfirmed.secondary }}>
         <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg text-center">
           <p className="text-5xl mb-4">🎉</p>
-          <h1 className="font-nunito font-extrabold text-xl mb-2">Livraison confirmee !</h1>
+          <h1 className="font-nunito font-extrabold text-xl mb-2" style={{ color: themeConfirmed.text }}>Livraison confirmee !</h1>
           <p className="text-fs-gray mb-6">La commande {order.order_number} est marquee comme livree.</p>
           <a href={clientWaLink} target="_blank" rel="noopener noreferrer"
              className="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl text-center hover:bg-[#1DA851] transition">
@@ -91,14 +93,16 @@ export default function LivraisonContent() {
 
   var items = (order.order_items || []).map(function(i: any) { return i.product_name }).join(', ')
 
+  var theme = getThemeColors(shop)
+
   return (
-    <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: theme.secondary }}>
       <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg">
         <div className="text-center mb-6">
           <p className="text-5xl mb-3">🛵</p>
-          <h1 className="font-nunito font-extrabold text-xl">Confirmer la livraison</h1>
+          <h1 className="font-nunito font-extrabold text-xl" style={{ color: theme.text }}>Confirmer la livraison</h1>
         </div>
-        <div className="bg-fs-cream rounded-xl p-4 space-y-2 mb-6">
+        <div className="rounded-xl p-4 space-y-2 mb-6" style={{ background: theme.secondary }}>
           <div className="flex justify-between text-sm">
             <span className="text-fs-gray">Commande</span>
             <span className="font-bold">{order.order_number}</span>
@@ -121,7 +125,7 @@ export default function LivraisonContent() {
           </div>
           <div className="flex justify-between text-sm pt-2 border-t border-fs-border">
             <span className="text-fs-gray">Montant</span>
-            <span className="font-nunito font-extrabold text-fs-orange">{order.total.toLocaleString()} FCFA</span>
+            <span className="font-nunito font-extrabold" style={{ color: theme.primary }}>{order.total.toLocaleString()} FCFA</span>
           </div>
         </div>
         <button onClick={confirmDelivery} disabled={confirming}

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import { isCheckoutPaymentModeAllowed } from '@/lib/plan-rules'
 import { useCart } from '@/components/cart'
 import Link from 'next/link'
+import { getThemeColors, getContrastText } from '@/lib/theme'
 
 type CommanderClientProps = {
   slug: string
@@ -41,6 +42,8 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
       </div>
     )
   }
+
+  var theme = getThemeColors(shop)
 
   var handleChange = function(e: any) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -180,18 +183,18 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
     var payInfo = getPaymentInstructions()
 
     return (
-      <div className="min-h-screen bg-fs-cream px-4 py-8">
+      <div className="min-h-screen px-4 py-8" style={{ background: theme.secondary }}>
         <div className="bg-white rounded-2xl p-6 max-w-md mx-auto shadow-lg">
           <div className="text-center mb-6">
             <div className="text-5xl mb-4">✅</div>
-            <h2 className="font-nunito font-extrabold text-xl mb-2">Commande confirmee !</h2>
-            <p className="text-fs-gray">Numero : <strong className="text-fs-ink">{confirmation.orderNumber}</strong></p>
+            <h2 className="font-nunito font-extrabold text-xl mb-2" style={{ color: theme.text }}>Commande confirmee !</h2>
+            <p className="text-fs-gray">Numero : <strong style={{ color: theme.text }}>{confirmation.orderNumber}</strong></p>
             <p className="text-fs-gray text-sm">{confirmation.items}</p>
-            <p className="font-nunito font-extrabold text-fs-orange text-lg mt-2">{formatPrice(confirmation.total)}</p>
+            <p className="font-nunito font-extrabold text-lg mt-2" style={{ color: theme.primary }}>{formatPrice(confirmation.total)}</p>
           </div>
 
           {payInfo && paymentMode !== 'especes' && paymentMode !== 'cb' && (
-            <div className="bg-fs-cream rounded-xl p-4 mb-4">
+            <div className="rounded-xl p-4 mb-4" style={{ background: theme.secondary }}>
               <p className="font-bold text-sm mb-2">{payInfo.title}</p>
               <p className="text-xs text-fs-gray mb-3">{payInfo.instructions}</p>
               {payInfo.number && (
@@ -203,7 +206,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
                 {payInfo.steps.map(function(s, i) {
                   return (
                     <div key={i} className="flex items-start gap-2 text-xs text-fs-gray">
-                      <span className="w-5 h-5 rounded-full bg-fs-orange text-white flex items-center justify-center shrink-0 text-[10px] font-bold">{i + 1}</span>
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold" style={{ background: theme.primary, color: getContrastText(theme.primary) }}>{i + 1}</span>
                       <span>{s}</span>
                     </div>
                   )
@@ -224,10 +227,11 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
             Confirmer sur WhatsApp avec {confirmation.shopName}
           </a>
           <a href={'/suivi?cmd=' + confirmation.orderNumber} target="_blank"
-             className="block w-full bg-fs-ink text-white font-bold py-3 rounded-xl text-center mt-3">
+             className="block w-full font-bold py-3 rounded-xl text-center mt-3"
+             style={{ background: theme.text, color: getContrastText(theme.text) }}>
             Suivre ma commande
           </a>
-          <Link href={'/boutique/' + slug} className="block mt-4 text-sm text-fs-orange font-semibold text-center">
+          <Link href={'/boutique/' + slug} className="block mt-4 text-sm font-semibold text-center" style={{ color: theme.primary }}>
             Retour a la boutique
           </Link>
         </div>
@@ -238,14 +242,14 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
   // ECRAN PAIEMENT
   if (step === 'payment') {
     return (
-      <div className="min-h-screen bg-fs-cream">
+      <div className="min-h-screen" style={{ background: theme.secondary }}>
         <header className="bg-white border-b border-fs-border px-4 py-4 flex items-center gap-3">
           <button onClick={function() { setStep('form') }} className="text-fs-gray text-lg">←</button>
-          <h1 className="font-nunito font-extrabold text-lg">Choisir le paiement</h1>
+          <h1 className="font-nunito font-extrabold text-lg" style={{ color: theme.text }}>Choisir le paiement</h1>
         </header>
 
         <div className="px-4 pt-4">
-          <div className="bg-fs-ink text-white rounded-xl p-3 flex items-center justify-between mb-4">
+          <div className="rounded-xl p-3 flex items-center justify-between mb-4" style={{ background: theme.text, color: getContrastText(theme.text) }}>
             <span className="font-semibold text-sm">Total a payer</span>
             <span className="font-nunito font-extrabold">{formatPrice(cart.total)}</span>
           </div>
@@ -256,7 +260,8 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
               return (
                 <button key={mode.id} type="button" onClick={function() { setPaymentMode(mode.id) }}
                         className={'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition ' +
-                          (isSelected ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-ink border-fs-border')}>
+                          (isSelected ? '' : 'bg-white text-fs-ink border-fs-border')}
+                        style={isSelected ? { background: theme.text, color: getContrastText(theme.text), borderColor: theme.text } : undefined}>
                   <span className="text-2xl">{mode.icon}</span>
                   <div>
                     <p className="text-sm font-bold">{mode.label}</p>
@@ -269,7 +274,8 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
           </div>
 
           <button onClick={handleSubmit} disabled={!paymentMode || loading}
-                  className="w-full bg-fs-orange text-white font-bold py-4 rounded-xl mt-6 hover:bg-fs-orange-deep transition disabled:opacity-50">
+                  className="w-full font-bold py-4 rounded-xl mt-6 transition disabled:opacity-50 hover:brightness-110"
+                  style={{ background: theme.primary, color: getContrastText(theme.primary) }}>
             {loading ? 'Envoin cours...' : 'Valider ma commande — ' + formatPrice(cart.total)}
           </button>
         </div>
@@ -280,20 +286,25 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
   // PANIER VIDE
   if (cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: theme.secondary }}>
         <p className="text-4xl mb-3">🛒</p>
         <p className="text-fs-gray mb-4">Votre panier est vide</p>
-        <Link href={'/boutique/' + slug} className="bg-fs-orange text-white font-bold px-6 py-3 rounded-xl">Voir le catalogue</Link>
+        <Link href={'/boutique/' + slug} className="font-bold px-6 py-3 rounded-xl" style={{ background: theme.primary, color: getContrastText(theme.primary) }}>Voir le catalogue</Link>
       </div>
     )
   }
 
   // ECRAN FORMULAIRE
+  var formRootStyle: CSSProperties = {
+    background: theme.secondary,
+    ['--shop-primary' as string]: theme.primary,
+  }
+
   return (
-    <div className="min-h-screen bg-fs-cream">
+    <div className="min-h-screen" style={formRootStyle}>
       <header className="bg-white border-b border-fs-border px-4 py-4 flex items-center gap-3">
         <Link href={'/boutique/' + slug} className="text-fs-gray text-lg">←</Link>
-        <h1 className="font-nunito font-extrabold text-lg">Finaliser la commande</h1>
+        <h1 className="font-nunito font-extrabold text-lg" style={{ color: theme.text }}>Finaliser la commande</h1>
       </header>
 
       <div className="px-4 pt-4 space-y-2">
@@ -337,7 +348,8 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
                       item.stock_quantity != null ? Math.min(item.quantity + 1, item.stock_quantity) : item.quantity + 1
                     )
                   }}
-                  className="w-7 h-7 rounded-lg bg-fs-ink text-white font-bold text-sm flex items-center justify-center">
+                  className="w-7 h-7 rounded-lg font-bold text-sm flex items-center justify-center"
+                  style={{ background: theme.text, color: getContrastText(theme.text) }}>
                   +
                 </button>
                 {/* Bouton poubelle : supprime complètement l'article du panier */}
@@ -349,7 +361,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
               </div>
 
               {/* Sous-total de la ligne */}
-              <p className="font-nunito font-extrabold text-sm text-fs-orange shrink-0 w-16 text-right">
+              <p className="font-nunito font-extrabold text-sm shrink-0 w-16 text-right" style={{ color: theme.primary }}>
                 {formatPrice(item.price * item.quantity)}
               </p>
             </div>
@@ -357,7 +369,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
         })}
 
         {/* Total général */}
-        <div className="bg-fs-ink text-white rounded-xl p-3 flex items-center justify-between">
+        <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: theme.text, color: getContrastText(theme.text) }}>
           <span className="font-semibold text-sm">Total · {cart.count} article{cart.count > 1 ? 's' : ''}</span>
           <span className="font-nunito font-extrabold">{formatPrice(cart.total)}</span>
         </div>
@@ -367,13 +379,13 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
         <div>
           <label className="block text-sm font-semibold mb-1">Votre nom</label>
           <input name="name" value={form.name} onChange={handleChange} required
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--shop-primary)]"
                  placeholder="Ex : Kone Aminata" />
         </div>
         <div>
           <label className="block text-sm font-semibold mb-1">Telephone</label>
           <input name="phone" type="tel" value={form.phone} onChange={handleChange} required
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
+                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--shop-primary)]"
                  placeholder="07 XX XX XX XX" />
         </div>
         <div>
@@ -381,12 +393,14 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
           <div className="flex gap-3">
             <button type="button" onClick={function() { setForm({ ...form, delivery: 'retrait' }) }}
                     className={'flex-1 py-3 rounded-xl border text-sm font-semibold transition ' +
-                      (form.delivery === 'retrait' ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-gray border-fs-border')}>
+                      (form.delivery === 'retrait' ? '' : 'bg-white text-fs-gray border-fs-border')}
+                    style={form.delivery === 'retrait' ? { background: theme.text, color: getContrastText(theme.text), borderColor: theme.text } : undefined}>
               Retrait
             </button>
             <button type="button" onClick={function() { setForm({ ...form, delivery: 'domicile' }) }}
                     className={'flex-1 py-3 rounded-xl border text-sm font-semibold transition ' +
-                      (form.delivery === 'domicile' ? 'bg-fs-ink text-white border-fs-ink' : 'bg-white text-fs-gray border-fs-border')}>
+                      (form.delivery === 'domicile' ? '' : 'bg-white text-fs-gray border-fs-border')}
+                    style={form.delivery === 'domicile' ? { background: theme.text, color: getContrastText(theme.text), borderColor: theme.text } : undefined}>
               Domicile
             </button>
           </div>
@@ -395,12 +409,13 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
           <div>
             <label className="block text-sm font-semibold mb-1">Adresse (commune, quartier, repere)</label>
             <textarea name="address" value={form.address} onChange={handleChange} required rows={3}
-                      className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange resize-none"
+                      className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--shop-primary)] resize-none"
                       placeholder="Ex : Cocody Angre, Star 8, pres de la pharmacie" />
           </div>
         )}
         <button type="submit"
-                className="w-full bg-fs-orange text-white font-bold py-4 rounded-xl hover:bg-fs-orange-deep transition">
+                className="w-full font-bold py-4 rounded-xl transition hover:brightness-110"
+                style={{ background: theme.primary, color: getContrastText(theme.primary) }}>
           Choisir le mode de paiement
         </button>
       </form>

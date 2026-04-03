@@ -8,9 +8,13 @@ import { useCart } from '@/components/cart'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import PageTracker from '@/components/tracker'
+import { getThemeColors, getContrastText } from '@/lib/theme'
 
 // GaleriePhotos : affiche la photo principale + miniatures cliquables
-function GaleriePhotos({ photos, productName }: { photos: string[], productName: string }) {
+function GaleriePhotos(props: { photos: string[], productName: string, ringColor?: string }) {
+  var photos = props.photos
+  var productName = props.productName
+  var ringColor = props.ringColor
   var [selected, setSelected] = useState(0)
   return (
     <div>
@@ -40,8 +44,9 @@ function GaleriePhotos({ photos, productName }: { photos: string[], productName:
           {photos.map(function(url, i) {
             return (
               <button key={i} onClick={function() { setSelected(i) }}
+                      style={selected === i && ringColor ? { borderColor: ringColor } : undefined}
                       className={'relative w-16 h-16 shrink-0 rounded-lg overflow-hidden border-2 transition ' +
-                        (selected === i ? 'border-fs-orange' : 'border-transparent')}>
+                        (selected === i ? (ringColor ? 'border-solid' : 'border-fs-orange') : 'border-transparent')}>
                 {url.indexOf('images.unsplash.com') !== -1 ? (
                   <img src={url} alt={productName + ' ' + (i + 1)} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
@@ -125,11 +130,12 @@ export default function ProduitContent() {
   }
 
   if (!product) {
+    var themeEmpty = getThemeColors(shop)
     return (
-      <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center" style={{ background: themeEmpty.secondary }}>
         <p className="text-5xl mb-4">🔍</p>
-        <h1 className="font-nunito font-extrabold text-xl mb-2">Produit introuvable</h1>
-        <Link href={'/boutique/' + slug} className="text-fs-orange font-semibold mt-4">Retour a la boutique</Link>
+        <h1 className="font-nunito font-extrabold text-xl mb-2" style={{ color: themeEmpty.text }}>Produit introuvable</h1>
+        <Link href={'/boutique/' + slug} className="font-semibold mt-4" style={{ color: themeEmpty.primary }}>Retour a la boutique</Link>
       </div>
     )
   }
@@ -140,13 +146,15 @@ export default function ProduitContent() {
   // cart.items.length = nombre de produits distincts (= 2) → c'était le bug
   var totalArticles = cart.count
 
+  var theme = getThemeColors(shop)
+
   return (
-    <div className="min-h-screen bg-fs-cream pb-32">
+    <div className="min-h-screen pb-32" style={{ background: theme.secondary }}>
       {shop && <PageTracker shopId={shop.id} page="produit" productId={product.id} />}
 
-      <header className="sticky top-0 z-50 bg-white border-b border-fs-border px-4 py-3 flex items-center gap-3">
+      <header className="sticky top-0 z-50 border-b border-fs-border px-4 py-3 flex items-center gap-3" style={{ background: theme.secondary }}>
         <Link href={'/boutique/' + slug} className="text-fs-gray text-lg">←</Link>
-        <h1 className="font-nunito font-extrabold text-base truncate">{shop?.name}</h1>
+        <h1 className="font-nunito font-extrabold text-base truncate" style={{ color: theme.text }}>{shop?.name}</h1>
       </header>
 
      {/* Galerie photos : affiche jusqu'à 3 photos avec miniatures cliquables */}
@@ -155,17 +163,17 @@ export default function ProduitContent() {
           // Collecte toutes les photos non nulles dans un tableau
           var photos = [product.image_url, product.image_url_2, product.image_url_3].filter(Boolean)
           if (photos.length === 0) {
-            return <div className="w-full h-72 bg-fs-cream flex items-center justify-center text-6xl">📦</div>
+            return <div className="w-full h-72 flex items-center justify-center text-6xl" style={{ background: theme.secondary }}>📦</div>
           }
-          return (
-            <GaleriePhotos photos={photos} productName={product.name} />
+            return (
+            <GaleriePhotos photos={photos} productName={product.name} ringColor={theme.primary} />
           )
         })()}
       </div>
 
       <div className="px-4 py-5 max-w-md mx-auto">
-        <h1 className="font-nunito font-extrabold text-xl mb-1">{product.name}</h1>
-        <p className="font-nunito font-extrabold text-2xl text-fs-orange mb-4">{formatPrice(product.price)}</p>
+        <h1 className="font-nunito font-extrabold text-xl mb-1" style={{ color: theme.text }}>{product.name}</h1>
+        <p className="font-nunito font-extrabold text-2xl mb-4" style={{ color: theme.primary }}>{formatPrice(product.price)}</p>
 
         {product.description && (
           <div className="bg-white border border-fs-border rounded-xl p-4 mb-4">
@@ -188,7 +196,7 @@ export default function ProduitContent() {
                variants[0]?.variant_type === 'size_shoes' ? 'Pointure' :
                variants[0]?.variant_type === 'size_clothing' ? 'Taille' : 'Variante'}
               {selectedVariant && (
-                <span className="ml-2 text-fs-orange">{selectedVariant.variant_value}</span>
+                <span className="ml-2" style={{ color: theme.primary }}>{selectedVariant.variant_value}</span>
               )}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -200,9 +208,16 @@ export default function ProduitContent() {
                   <button key={v.id} type="button"
                           onClick={function() { if (!isOut) setSelectedVariant(isSelected ? null : v) }}
                           disabled={isOut}
+                          style={
+                            isOut
+                              ? undefined
+                              : isSelected
+                                ? { background: theme.primary, borderColor: theme.primary, color: getContrastText(theme.primary) }
+                                : undefined
+                          }
                           className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
                             (isOut ? 'border-fs-border text-gray-300 line-through cursor-not-allowed' :
-                             isSelected ? 'border-fs-orange bg-fs-orange text-white' :
+                             isSelected ? '' :
                              'border-fs-border bg-white text-fs-ink hover:border-fs-orange')}>
                     {v.variant_value}
                     {vStock != null && vStock > 0 && vStock <= 3 && !isOut && (
@@ -226,7 +241,12 @@ export default function ProduitContent() {
           onClick={addToCart}
           disabled={stockStatus === 'out'}
           className={'w-full font-bold py-4 rounded-xl transition text-center ' +
-            (added ? 'bg-fs-green text-white' : stockStatus === 'out' ? 'bg-gray-200 text-gray-400' : 'bg-fs-orange text-white hover:bg-fs-orange-deep')}>
+            (added ? 'bg-fs-green text-white' : stockStatus === 'out' ? 'bg-gray-200 text-gray-400' : 'hover:brightness-110')}
+          style={
+            added || stockStatus === 'out'
+              ? undefined
+              : { background: theme.primary, color: getContrastText(theme.primary) }
+          }>
           {added ? '✓ Ajouté au panier !' : stockStatus === 'out' ? 'Indisponible' : 'Ajouter au panier — ' + formatPrice(product.price)}
         </button>
 
@@ -235,7 +255,8 @@ export default function ProduitContent() {
         {totalArticles > 0 && (
           <Link
             href={'/boutique/' + slug + '/commander'}
-            className="block w-full bg-fs-ink text-white font-bold py-3.5 rounded-xl text-center mt-3">
+            className="block w-full font-bold py-3.5 rounded-xl text-center mt-3"
+            style={{ background: theme.text, color: getContrastText(theme.text) }}>
             {/* totalArticles = cart.count = somme des quantités, pas le nombre de lignes */}
             🛒 Valider le panier · {totalArticles} article{totalArticles > 1 ? 's' : ''} · {formatPrice(cart.total)}
           </Link>
