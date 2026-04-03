@@ -74,13 +74,15 @@ export default function LivreursPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <h1 className="font-nunito font-black text-base">Mes livreurs</h1>
+              <h1 style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 24, fontWeight: 600, color: 'white' }}>Mes livreurs</h1>
               <HelpButton section="livreurs" />
             </div>
             <p className="text-xs text-gray-500">{livreurs.length}/{maxLivreurs} livreur{maxLivreurs > 1 ? 's' : ''}</p>
           </div>
           <button onClick={function() { if (canAdd) setShowForm(true); else alert('Limite de ' + maxLivreurs + ' livreur(s) pour le plan ' + (shop?.plan || 'starter') + '. Passez au plan superieur.') }}
-                  className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">
+                  style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#DC5014', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', transition: 'transform 0.15s' }}
+                  onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.03)' }}
+                  onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)' }}>
             + Ajouter
           </button>
         </div>
@@ -95,30 +97,32 @@ export default function LivreursPage() {
             </h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold mb-1">Nom</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Nom</label>
                 <input name="name" value={form.name} onChange={handleChange} required
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex : Moussa" />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Telephone</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Telephone</label>
                 <input name="phone" type="tel" value={form.phone} onChange={handleChange} required
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex : 0700000000" />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Zone (optionnel)</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Zone (optionnel)</label>
                 <input name="zone" value={form.zone} onChange={handleChange}
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex : Cocody, Plateau" />
               </div>
               <div className="flex gap-2">
                 <button type="submit" disabled={loading}
-                        className="flex-1 bg-fs-orange text-white font-bold py-3 rounded-xl hover:bg-fs-orange-deep transition disabled:opacity-50">
+                        style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#DC5014', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', transition: 'transform 0.15s, box-shadow 0.15s', flex: 1, opacity: loading ? 0.5 : 1 }}
+                        onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(220,80,20,0.25)' }}
+                        onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}>
                   {loading ? 'Enregistrement...' : (editing ? 'Modifier' : 'Ajouter')}
                 </button>
                 <button type="button" onClick={resetForm}
-                        className="px-4 py-3 rounded-xl border border-fs-border text-fs-gray font-semibold">
+                        style={{ padding: '10px 20px', borderRadius: 10, border: '1.5px solid #E8DDD0', background: 'white', color: '#7C6C58', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', transition: 'border-color 0.2s' }}>
                   Annuler
                 </button>
               </div>
@@ -128,7 +132,10 @@ export default function LivreursPage() {
 
         {livreurs.map(function(livreur) {
           return (
-            <div key={livreur.id} className="bg-white rounded-2xl border border-fs-border p-4 flex items-center gap-4">
+            <div key={livreur.id}
+                 style={{ background: 'white', borderRadius: 14, border: '1px solid #E8DDD0', padding: 16, display: 'flex', alignItems: 'center', gap: 16, transition: 'transform 0.15s, box-shadow 0.15s' }}
+                 onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)' }}
+                 onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
               <div className="w-10 h-10 rounded-full bg-fs-orange-pale flex items-center justify-center shrink-0">
                 <span className="text-lg">🛵</span>
               </div>
@@ -152,9 +159,11 @@ export default function LivreursPage() {
         })}
 
         {livreurs.length === 0 && !showForm && (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">🛵</p>
-            <p className="text-fs-gray mb-4">Aucun livreur pour le moment</p>
+          <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>🛵</div>
+            <div style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 18, fontWeight: 500, color: '#2C1A0E', marginBottom: 8 }}>
+              Aucun livreur pour le moment
+            </div>
             <button onClick={function() { setShowForm(true) }}
                     className="bg-fs-orange text-white font-bold px-6 py-3 rounded-xl">
               Ajouter mon premier livreur

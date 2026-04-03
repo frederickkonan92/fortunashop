@@ -217,7 +217,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <h1 className="font-nunito font-black text-base">Dashboard</h1>
+              <h1 style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 24, fontWeight: 600, color: 'white' }}>Dashboard</h1>
               <HelpButton section="dashboard" />
             </div>
             <p className="text-xs text-gray-500">{shop?.name} · Plan {shop?.plan}</p>
@@ -269,9 +269,11 @@ export default function DashboardPage() {
             {/* KPI GRILLE BASIQUE — tous les plans */}
             <div className="grid grid-cols-2 gap-3">
    {/* ENCART CA TOTAL */}
-   <div className="bg-white border border-fs-border rounded-2xl p-4">
-              <p className="text-xs text-fs-gray mb-1">Chiffre d'affaires total</p>
-              <p className="font-nunito font-extrabold text-3xl text-fs-orange mb-3">{formatPrice(ca)}</p>
+   <div style={{ background: 'white', borderRadius: 16, padding: '20px 24px', border: '1px solid #E8DDD0', transition: 'transform 0.2s, box-shadow 0.2s' }}
+        onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)' }}
+        onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+              <p style={{ fontSize: 12, color: '#7C6C58', fontWeight: 500, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'var(--font-outfit), sans-serif', marginBottom: 6 }}>Chiffre d'affaires total</p>
+              <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#DC5014', marginBottom: 12 }}>{formatPrice(ca)}</p>
               {/* Distinction en ligne / physique */}
               <div className="flex gap-4 border-t border-fs-border pt-3">
                 <div className="flex items-center gap-1.5">
@@ -297,18 +299,22 @@ export default function DashboardPage() {
             {/* KPI GRILLE 3 COLONNES */}
             <div className="grid grid-cols-3 gap-3">
               {/* COMMANDES */}
-              <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
-                <p className="text-[10px] text-fs-gray mb-1">Commandes</p>
-                <p className="font-nunito font-extrabold text-lg">{nbCommandes}</p>
+              <div style={{ background: 'white', borderRadius: 16, padding: '12px', border: '1px solid #E8DDD0', textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                   onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)' }}
+                   onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+                <p style={{ fontSize: 10, color: '#7C6C58', fontWeight: 500, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'var(--font-outfit), sans-serif', marginBottom: 4 }}>Commandes</p>
+                <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#2C1A0E' }}>{nbCommandes}</p>
                 <p className="text-[10px] text-fs-gray mt-1">
                   ✅{deliveredOrders.length} · ❌{cancelledOrders.length}
                 </p>
               </div>
 
               {/* TAUX LIVRAISON */}
-              <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
-                <p className="text-[10px] text-fs-gray mb-1">Livraison</p>
-                <p className="font-nunito font-extrabold text-lg">{tauxLivraison}%</p>
+              <div style={{ background: 'white', borderRadius: 16, padding: '12px', border: '1px solid #E8DDD0', textAlign: 'center', transition: 'transform 0.2s, box-shadow 0.2s' }}
+                   onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)' }}
+                   onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+                <p style={{ fontSize: 10, color: '#7C6C58', fontWeight: 500, letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'var(--font-outfit), sans-serif', marginBottom: 4 }}>Livraison</p>
+                <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#2C1A0E' }}>{tauxLivraison}%</p>
                 <p className="text-[10px] text-fs-gray mt-1">taux</p>
               </div>
 
@@ -327,7 +333,7 @@ export default function DashboardPage() {
               {isProPlan(shop?.plan) && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Panier moyen</p>
-                  <p className="font-nunito font-extrabold text-lg">{formatPrice(panierMoyen)}</p>
+                  <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#2C1A0E' }}>{formatPrice(panierMoyen)}</p>
                   <p className="text-[10px] text-fs-gray mt-1">par commande</p>
                 </div>
               )}
@@ -336,7 +342,7 @@ export default function DashboardPage() {
                       {hasAddon(shop?.addons, 'stock') && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Ventes physiques</p>
-                  <p className="font-nunito font-extrabold text-lg">{filteredPhysical.length}</p>
+                  <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#2C1A0E' }}>{filteredPhysical.length}</p>
                   <p className="text-[10px] text-fs-gray mt-1">transactions</p>
                 </div>
               )}
@@ -462,11 +468,11 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white border border-fs-border rounded-2xl p-4">
                 <p className="text-xs text-fs-gray mb-1">Visiteurs</p>
-                <p className="font-nunito font-extrabold text-xl">{totalVisites}</p>
+                <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#2C1A0E' }}>{totalVisites}</p>
               </div>
               <div className="bg-white border border-fs-border rounded-2xl p-4">
                 <p className="text-xs text-fs-gray mb-1">Taux de conversion</p>
-                <p className="font-nunito font-extrabold text-xl text-fs-orange">{tauxConversion}%</p>
+                <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#DC5014' }}>{tauxConversion}%</p>
               </div>
             </div>
 

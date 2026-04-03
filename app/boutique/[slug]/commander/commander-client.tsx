@@ -1,17 +1,226 @@
 'use client'
 
-import { useState, useEffect, type CSSProperties } from 'react'
-import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import { isCheckoutPaymentModeAllowed } from '@/lib/plan-rules'
 import { useCart } from '@/components/cart'
 import Link from 'next/link'
-import { getThemeColors, getContrastText } from '@/lib/theme'
+import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
 
 type CommanderClientProps = {
   slug: string
   initialShop: any | null
+}
+
+// Composant champ de formulaire réutilisable
+function FormField({ label, value, onChange, placeholder, type, required, name, theme, multiline, rows }: any) {
+  if (multiline) {
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <label style={{
+          display: 'block', fontSize: 12, fontWeight: 600,
+          color: theme.text, marginBottom: 6, letterSpacing: 0.5,
+          fontFamily: 'var(--font-outfit), sans-serif',
+        }}>
+          {label} {required && <span style={{ color: theme.primary }}>*</span>}
+        </label>
+        <textarea name={name} value={value} onChange={onChange}
+          placeholder={placeholder} required={required} rows={rows || 3}
+          style={{
+            width: '100%', padding: '12px 16px',
+            borderRadius: 10, border: '1.5px solid #E8DDD0',
+            fontSize: 14, color: theme.text,
+            background: 'white',
+            fontFamily: 'var(--font-outfit), sans-serif',
+            transition: 'border-color 0.2s',
+            outline: 'none', resize: 'none',
+          }}
+          onFocus={function(e: any) { e.target.style.borderColor = theme.primary }}
+          onBlur={function(e: any) { e.target.style.borderColor = '#E8DDD0' }}
+        />
+      </div>
+    )
+  }
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{
+        display: 'block', fontSize: 12, fontWeight: 600,
+        color: theme.text, marginBottom: 6, letterSpacing: 0.5,
+        fontFamily: 'var(--font-outfit), sans-serif',
+      }}>
+        {label} {required && <span style={{ color: theme.primary }}>*</span>}
+      </label>
+      <input type={type || 'text'} name={name} value={value} onChange={onChange}
+        placeholder={placeholder} required={required}
+        style={{
+          width: '100%', padding: '12px 16px',
+          borderRadius: 10, border: '1.5px solid #E8DDD0',
+          fontSize: 14, color: theme.text,
+          background: 'white',
+          fontFamily: 'var(--font-outfit), sans-serif',
+          transition: 'border-color 0.2s',
+          outline: 'none',
+        }}
+        onFocus={function(e: any) { e.target.style.borderColor = theme.primary }}
+        onBlur={function(e: any) { e.target.style.borderColor = '#E8DDD0' }}
+      />
+    </div>
+  )
+}
+
+// Header boutique réutilisable (cohérent catalogue / fiche / commande)
+function ShopHeader({ shop, theme }: any) {
+  return (
+    <header style={{
+      background: theme.primary,
+      padding: '16px 20px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {shop.logo_url ? (
+          <img src={shop.logo_url} alt={shop.name}
+            style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'contain', background: 'white', padding: 3 }} />
+        ) : (
+          <div style={{
+            width: 44, height: 44, borderRadius: 10,
+            background: theme.accent, color: theme.primary,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-cormorant), serif', fontSize: 22, fontWeight: 600,
+          }}>
+            {shop.name?.charAt(0)}
+          </div>
+        )}
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-cormorant), serif', fontSize: 18, fontWeight: 600,
+            color: getContrastText(theme.primary), letterSpacing: 0.5,
+          }}>
+            {shop.name}
+          </div>
+          {shop.description && (
+            <div style={{
+              fontSize: 11, color: 'rgba(255,255,255,0.6)',
+              letterSpacing: 1, textTransform: 'uppercase', marginTop: 1,
+              maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {shop.description}
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 5,
+        fontSize: 11, color: 'rgba(255,255,255,0.7)',
+      }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
+        En ligne
+      </div>
+    </header>
+  )
+}
+
+// Footer boutique réutilisable
+function ShopFooter({ shop, theme }: any) {
+  return (
+    <footer style={{
+      background: getLightColor(theme.primary, 0.04),
+      padding: '24px 20px',
+      borderTop: '1px solid #E8DDD0',
+    }}>
+      {(shop?.social_instagram || shop?.social_facebook || shop?.social_whatsapp) && (
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16,
+        }}>
+          {shop.social_instagram && (
+            <a href={shop.social_instagram.startsWith('http') ? shop.social_instagram : 'https://instagram.com/' + shop.social_instagram}
+              target="_blank" rel="noopener noreferrer"
+              style={{ color: theme.primary, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+              Instagram
+            </a>
+          )}
+          {shop.social_whatsapp && (
+            <a href={'https://wa.me/' + shop.social_whatsapp.replace(/[^0-9+]/g, '')}
+              target="_blank" rel="noopener noreferrer"
+              style={{ color: theme.primary, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+              WhatsApp
+            </a>
+          )}
+          {shop.social_facebook && (
+            <a href={shop.social_facebook.startsWith('http') ? shop.social_facebook : 'https://facebook.com/' + shop.social_facebook}
+              target="_blank" rel="noopener noreferrer"
+              style={{ color: theme.primary, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+              Facebook
+            </a>
+          )}
+        </div>
+      )}
+      <div style={{ textAlign: 'center' }}>
+        <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer"
+          style={{ fontSize: 11, color: '#7C6C58', textDecoration: 'none' }}>
+          Propulse par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
+        </a>
+      </div>
+    </footer>
+  )
+}
+
+// Stepper de progression
+function Stepper({ currentStep, theme }: any) {
+  var steps = [
+    { num: 1, label: 'Panier' },
+    { num: 2, label: 'Livraison' },
+    { num: 3, label: 'Paiement' },
+  ]
+  return (
+    <div style={{
+      padding: '20px 20px 0', background: theme.secondary,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0,
+    }}>
+      {steps.map(function(step, idx) {
+        var isActive = currentStep >= step.num
+        var isCurrent = currentStep === step.num
+        return (
+          <div key={step.num} style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: isActive ? theme.primary : '#E8DDD0',
+                color: isActive ? getContrastText(theme.primary) : '#7C6C58',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 600, margin: '0 auto 4px',
+                transition: 'all 0.3s',
+                fontFamily: 'var(--font-outfit), sans-serif',
+              }}>
+                {isActive && step.num < currentStep ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                ) : step.num}
+              </div>
+              <div style={{
+                fontSize: 10, color: isCurrent ? theme.primary : '#7C6C58',
+                fontWeight: isCurrent ? 600 : 400, letterSpacing: 0.5,
+                fontFamily: 'var(--font-outfit), sans-serif',
+              }}>
+                {step.label}
+              </div>
+            </div>
+            {idx < 2 && (
+              <div style={{
+                width: 40, height: 2, margin: '0 8px',
+                background: isActive && step.num < currentStep ? theme.primary : '#E8DDD0',
+                borderRadius: 1, marginBottom: 16,
+                transition: 'background 0.3s',
+              }} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function CommanderClient({ slug, initialShop }: CommanderClientProps) {
@@ -168,7 +377,9 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
     return null
   }
 
+  // ─────────────────────────────────────────────
   // ECRAN CONFIRMATION
+  // ─────────────────────────────────────────────
   if (step === 'confirmation' && confirmation) {
     var waText = encodeURIComponent(
       'Nouvelle commande ' + confirmation.orderNumber + '\n'
@@ -183,242 +394,575 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
     var payInfo = getPaymentInstructions()
 
     return (
-      <div className="min-h-screen px-4 py-8" style={{ background: theme.secondary }}>
-        <div className="bg-white rounded-2xl p-6 max-w-md mx-auto shadow-lg">
-          <div className="text-center mb-6">
-            <div className="text-5xl mb-4">✅</div>
-            <h2 className="font-nunito font-extrabold text-xl mb-2" style={{ color: theme.text }}>Commande confirmee !</h2>
-            <p className="text-fs-gray">Numero : <strong style={{ color: theme.text }}>{confirmation.orderNumber}</strong></p>
-            <p className="text-fs-gray text-sm">{confirmation.items}</p>
-            <p className="font-nunito font-extrabold text-lg mt-2" style={{ color: theme.primary }}>{formatPrice(confirmation.total)}</p>
+      <div className="min-h-screen" style={{ background: theme.secondary }}>
+        <ShopHeader shop={shop} theme={theme} />
+
+        {/* Cercle de succès + infos */}
+        <div style={{
+          padding: '48px 24px', textAlign: 'center',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: getLightColor(theme.primary, 0.1),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 20,
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+              stroke={theme.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
           </div>
 
-          {payInfo && paymentMode !== 'especes' && paymentMode !== 'cb' && (
-            <div className="rounded-xl p-4 mb-4" style={{ background: theme.secondary }}>
-              <p className="font-bold text-sm mb-2">{payInfo.title}</p>
-              <p className="text-xs text-fs-gray mb-3">{payInfo.instructions}</p>
+          <h2 style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: 24, fontWeight: 500, color: theme.text,
+            marginBottom: 8,
+          }}>
+            Commande confirmee
+          </h2>
+
+          <p style={{
+            fontSize: 14, color: '#7C6C58', marginBottom: 8,
+            fontFamily: 'var(--font-outfit), sans-serif',
+            maxWidth: 300, lineHeight: 1.6,
+          }}>
+            Merci pour votre commande. Vous recevrez une confirmation par WhatsApp.
+          </p>
+
+          <p style={{
+            fontSize: 12, color: '#7C6C58', marginBottom: 24,
+            fontFamily: 'var(--font-outfit), sans-serif',
+          }}>
+            {confirmation.items}
+          </p>
+
+          {/* Numéro de commande */}
+          <div style={{
+            background: getLightColor(theme.primary, 0.08),
+            borderRadius: 12, padding: '16px 24px',
+            marginBottom: 12, display: 'inline-block',
+          }}>
+            <div style={{
+              fontSize: 11, color: '#7C6C58', letterSpacing: 1,
+              textTransform: 'uppercase', marginBottom: 4,
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>
+              Numero de commande
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontSize: 22, fontWeight: 600, color: theme.primary,
+            }}>
+              {confirmation.orderNumber}
+            </div>
+          </div>
+
+          {/* Total */}
+          <div style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: 20, fontWeight: 600, color: theme.primary,
+            marginBottom: 24,
+          }}>
+            {formatPrice(confirmation.total)}
+          </div>
+        </div>
+
+        {/* Instructions de paiement */}
+        {payInfo && paymentMode !== 'especes' && paymentMode !== 'cb' && (
+          <div style={{ padding: '0 20px 20px' }}>
+            <div style={{
+              background: 'white', borderRadius: 14, padding: '20px',
+              border: '1px solid #E8DDD0',
+            }}>
+              <div style={{
+                fontSize: 14, fontWeight: 600, color: theme.text, marginBottom: 8,
+                fontFamily: 'var(--font-outfit), sans-serif',
+              }}>
+                {payInfo.title}
+              </div>
+              <p style={{ fontSize: 12, color: '#7C6C58', marginBottom: 12 }}>{payInfo.instructions}</p>
               {payInfo.number && (
-                <div className="bg-white rounded-lg p-3 text-center mb-3">
-                  <p className="font-nunito font-extrabold text-lg">{payInfo.number}</p>
+                <div style={{
+                  background: getLightColor(theme.primary, 0.06),
+                  borderRadius: 10, padding: '12px', textAlign: 'center', marginBottom: 12,
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-cormorant), serif',
+                    fontSize: 20, fontWeight: 600, color: theme.text,
+                  }}>
+                    {payInfo.number}
+                  </span>
                 </div>
               )}
-              <div className="space-y-2">
-                {payInfo.steps.map(function(s, i) {
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {payInfo.steps.map(function(s: string, i: number) {
                   return (
-                    <div key={i} className="flex items-start gap-2 text-xs text-fs-gray">
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold" style={{ background: theme.primary, color: getContrastText(theme.primary) }}>{i + 1}</span>
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: '#7C6C58' }}>
+                      <span style={{
+                        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 700,
+                        background: theme.primary, color: getContrastText(theme.primary),
+                      }}>{i + 1}</span>
                       <span>{s}</span>
                     </div>
                   )
                 })}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {paymentMode === 'especes' && (
-            <div className="bg-fs-green-bg rounded-xl p-4 mb-4 text-center">
-              <p className="font-bold text-sm text-fs-green">Payez {formatPrice(confirmation.total)} au retrait</p>
-              <p className="text-xs text-fs-gray mt-1">Presentez le numero {confirmation.orderNumber} a la boutique</p>
+        {paymentMode === 'especes' && (
+          <div style={{ padding: '0 20px 20px' }}>
+            <div style={{
+              background: getLightColor('#2A7A50', 0.08), borderRadius: 14,
+              padding: '16px 20px', textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#2A7A50' }}>
+                Payez {formatPrice(confirmation.total)} au retrait
+              </p>
+              <p style={{ fontSize: 12, color: '#7C6C58', marginTop: 4 }}>
+                Presentez le numero {confirmation.orderNumber} a la boutique
+              </p>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* Boutons d'action */}
+        <div style={{ padding: '0 20px 24px' }}>
           <a href={waLink} target="_blank" rel="noopener noreferrer"
-             className="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl text-center hover:bg-[#1DA851] transition">
+            style={{
+              display: 'block', width: '100%', padding: '14px 24px',
+              borderRadius: 12, textAlign: 'center', marginBottom: 10,
+              background: '#25D366', color: 'white',
+              fontSize: 14, fontWeight: 600, textDecoration: 'none',
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>
             Confirmer sur WhatsApp avec {confirmation.shopName}
           </a>
           <a href={'/suivi?cmd=' + confirmation.orderNumber} target="_blank"
-             className="block w-full font-bold py-3 rounded-xl text-center mt-3"
-             style={{ background: theme.text, color: getContrastText(theme.text) }}>
+            style={{
+              display: 'block', width: '100%', padding: '14px 24px',
+              borderRadius: 12, textAlign: 'center', marginBottom: 10,
+              background: theme.text, color: getContrastText(theme.text),
+              fontSize: 14, fontWeight: 600, textDecoration: 'none',
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>
             Suivre ma commande
           </a>
-          <Link href={'/boutique/' + slug} className="block mt-4 text-sm font-semibold text-center" style={{ color: theme.primary }}>
+          <a href={'/boutique/' + slug}
+            style={{
+              display: 'inline-block', width: '100%', padding: '12px 32px',
+              borderRadius: 10, border: '1.5px solid ' + theme.primary,
+              color: theme.primary, fontSize: 14, fontWeight: 500,
+              textDecoration: 'none', textAlign: 'center',
+              fontFamily: 'var(--font-outfit), sans-serif',
+              transition: 'all 0.2s',
+            }}>
             Retour a la boutique
-          </Link>
+          </a>
         </div>
+
+        <ShopFooter shop={shop} theme={theme} />
       </div>
     )
   }
 
+  // ─────────────────────────────────────────────
   // ECRAN PAIEMENT
+  // ─────────────────────────────────────────────
   if (step === 'payment') {
     return (
       <div className="min-h-screen" style={{ background: theme.secondary }}>
-        <header className="bg-white border-b border-fs-border px-4 py-4 flex items-center gap-3">
-          <button onClick={function() { setStep('form') }} className="text-fs-gray text-lg">←</button>
-          <h1 className="font-nunito font-extrabold text-lg" style={{ color: theme.text }}>Choisir le paiement</h1>
-        </header>
+        <ShopHeader shop={shop} theme={theme} />
+        <Stepper currentStep={3} theme={theme} />
 
-        <div className="px-4 pt-4">
-          <div className="rounded-xl p-3 flex items-center justify-between mb-4" style={{ background: theme.text, color: getContrastText(theme.text) }}>
-            <span className="font-semibold text-sm">Total a payer</span>
-            <span className="font-nunito font-extrabold">{formatPrice(cart.total)}</span>
+        {/* Total à payer */}
+        <div style={{ padding: '20px 20px 12px' }}>
+          <div style={{
+            borderRadius: 12, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: theme.text, color: getContrastText(theme.text),
+          }}>
+            <span style={{
+              fontSize: 14, fontWeight: 500,
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>Total a payer</span>
+            <span style={{
+              fontFamily: 'var(--font-cormorant), serif',
+              fontSize: 20, fontWeight: 600,
+            }}>{formatPrice(cart.total)}</span>
           </div>
+        </div>
 
-          <div className="space-y-2">
+        {/* Modes de paiement */}
+        <div style={{ padding: '0 20px 20px', background: theme.secondary }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: theme.text,
+            marginBottom: 12,
+            fontFamily: 'var(--font-outfit), sans-serif',
+          }}>
+            Mode de paiement
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {availableModes.map(function(mode) {
               var isSelected = paymentMode === mode.id
               return (
-                <button key={mode.id} type="button" onClick={function() { setPaymentMode(mode.id) }}
-                        className={'w-full flex items-center gap-3 p-4 rounded-xl border text-left transition ' +
-                          (isSelected ? '' : 'bg-white text-fs-ink border-fs-border')}
-                        style={isSelected ? { background: theme.text, color: getContrastText(theme.text), borderColor: theme.text } : undefined}>
-                  <span className="text-2xl">{mode.icon}</span>
-                  <div>
-                    <p className="text-sm font-bold">{mode.label}</p>
-                    <p className={'text-xs ' + (isSelected ? 'text-gray-300' : 'text-fs-gray')}>{mode.desc}</p>
+                <button key={mode.id} type="button"
+                  onClick={function() { setPaymentMode(mode.id) }}
+                  style={{
+                    padding: '14px 16px', borderRadius: 12,
+                    border: isSelected ? '2px solid ' + theme.primary : '1.5px solid #E8DDD0',
+                    background: isSelected ? getLightColor(theme.primary, 0.06) : 'white',
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}
+                >
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%',
+                    border: isSelected ? 'none' : '2px solid #D0C8BC',
+                    background: isSelected ? theme.primary : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'all 0.2s',
+                  }}>
+                    {isSelected && (
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
+                    )}
                   </div>
-                  {isSelected && <span className="ml-auto text-lg">✓</span>}
+                  <span style={{ fontSize: 20, flexShrink: 0 }}>{mode.icon}</span>
+                  <div>
+                    <div style={{
+                      fontSize: 14, fontWeight: 500, color: theme.text,
+                      fontFamily: 'var(--font-outfit), sans-serif',
+                    }}>
+                      {mode.label}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#7C6C58', marginTop: 2 }}>
+                      {mode.desc}
+                    </div>
+                  </div>
                 </button>
               )
             })}
           </div>
+        </div>
 
-          <button onClick={handleSubmit} disabled={!paymentMode || loading}
-                  className="w-full font-bold py-4 rounded-xl mt-6 transition disabled:opacity-50 hover:brightness-110"
-                  style={{ background: theme.primary, color: getContrastText(theme.primary) }}>
-            {loading ? 'Envoin cours...' : 'Valider ma commande — ' + formatPrice(cart.total)}
+        {/* Bouton valider */}
+        <div style={{
+          padding: '16px 20px 24px', background: theme.secondary,
+        }}>
+          <button type="button"
+            onClick={handleSubmit}
+            disabled={!paymentMode || loading}
+            style={{
+              width: '100%', padding: '16px 24px',
+              borderRadius: 12, border: 'none',
+              background: (!paymentMode || loading) ? '#E0D8D0' : theme.primary,
+              color: (!paymentMode || loading) ? '#A0988E' : getContrastText(theme.primary),
+              fontSize: 15, fontWeight: 600,
+              cursor: (!paymentMode || loading) ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--font-outfit), sans-serif',
+              letterSpacing: 0.5, transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            }}
+          >
+            {loading ? 'Traitement en cours...' : 'Valider ma commande — ' + formatPrice(cart.total)}
+          </button>
+
+          {/* Bouton retour */}
+          <button type="button" onClick={function() { setStep('form') }}
+            style={{
+              width: '100%', padding: '12px 24px', marginTop: 10,
+              borderRadius: 10, border: '1.5px solid #E8DDD0',
+              background: 'transparent', color: '#7C6C58',
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              fontFamily: 'var(--font-outfit), sans-serif',
+              textAlign: 'center',
+            }}>
+            Retour
           </button>
         </div>
+
+        <ShopFooter shop={shop} theme={theme} />
       </div>
     )
   }
 
+  // ─────────────────────────────────────────────
   // PANIER VIDE
+  // ─────────────────────────────────────────────
   if (cart.items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: theme.secondary }}>
-        <p className="text-4xl mb-3">🛒</p>
-        <p className="text-fs-gray mb-4">Votre panier est vide</p>
-        <Link href={'/boutique/' + slug} className="font-bold px-6 py-3 rounded-xl" style={{ background: theme.primary, color: getContrastText(theme.primary) }}>Voir le catalogue</Link>
+      <div className="min-h-screen" style={{ background: theme.secondary }}>
+        <ShopHeader shop={shop} theme={theme} />
+        <div style={{
+          padding: '60px 24px', textAlign: 'center',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          minHeight: '50vh',
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>( )</div>
+          <p style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: 18, fontWeight: 500, marginBottom: 8, color: theme.text,
+          }}>
+            Votre panier est vide
+          </p>
+          <p style={{ fontSize: 13, color: '#7C6C58', marginBottom: 24, lineHeight: 1.6 }}>
+            Parcourez nos creations et ajoutez vos coups de coeur
+          </p>
+          <a href={'/boutique/' + slug}
+            style={{
+              display: 'inline-block', padding: '12px 32px',
+              borderRadius: 10, background: theme.primary,
+              color: getContrastText(theme.primary),
+              fontSize: 14, fontWeight: 600, textDecoration: 'none',
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>
+            Voir le catalogue
+          </a>
+        </div>
+        <ShopFooter shop={shop} theme={theme} />
       </div>
     )
   }
 
-  // ECRAN FORMULAIRE
-  var formRootStyle: CSSProperties = {
-    background: theme.secondary,
-    ['--shop-primary' as string]: theme.primary,
-  }
-
+  // ─────────────────────────────────────────────
+  // ECRAN FORMULAIRE (panier + infos + livraison)
+  // ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={formRootStyle}>
-      <header className="bg-white border-b border-fs-border px-4 py-4 flex items-center gap-3">
-        <Link href={'/boutique/' + slug} className="text-fs-gray text-lg">←</Link>
-        <h1 className="font-nunito font-extrabold text-lg" style={{ color: theme.text }}>Finaliser la commande</h1>
-      </header>
+    <div className="min-h-screen" style={{ background: theme.secondary }}>
+      <ShopHeader shop={shop} theme={theme} />
+      <Stepper currentStep={1} theme={theme} />
 
-      <div className="px-4 pt-4 space-y-2">
-        {cart.items.map(function(item) {
+      {/* Titre section panier */}
+      <div style={{
+        padding: '20px 20px 12px', background: theme.secondary,
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: 18, fontWeight: 600, color: theme.text,
+        }}>
+          Votre panier
+        </div>
+      </div>
+
+      {/* Articles du panier */}
+      <div style={{ padding: '0 20px', background: theme.secondary }}>
+        {cart.items.map(function(item: any) {
           return (
-            <div key={item.id} className="bg-white border border-fs-border rounded-xl p-3 flex items-center gap-3">
-              {/* Image du produit */}
-              <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-fs-border relative">
+            <div key={item.id} style={{
+              display: 'flex', gap: 14, padding: '14px 0',
+              borderBottom: '1px solid #E8DDD0',
+              alignItems: 'center',
+            }}>
+              {/* Image miniature */}
+              <div style={{
+                width: 64, height: 64, borderRadius: 10, overflow: 'hidden',
+                background: '#F5EDE5', flexShrink: 0,
+              }}>
                 {item.image_url ? (
-                  item.image_url.indexOf('images.unsplash.com') !== -1 ? (
-                    <img src={item.image_url} alt={item.name} className="w-full h-full object-contain" />
-                  ) : (
-                    <Image src={item.image_url} alt={item.name} fill className="object-contain" sizes="48px" />
-                  )
+                  <img src={item.image_url} alt={item.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <span className="text-xl">🛍️</span>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    height: '100%', color: '#CCC', fontSize: 10,
+                  }}>Photo</div>
                 )}
               </div>
-
-              {/* Nom + variantes + prix unitaire */}
-              <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm line-clamp-2 leading-tight">{item.name}</p>
-              <p className="text-xs text-fs-gray mt-0.5">{formatPrice(item.price)} / unité</p>
+              {/* Infos */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontFamily: 'var(--font-cormorant), serif',
+                  fontSize: 14, fontWeight: 600, color: theme.text,
+                  marginBottom: 2,
+                }}>
+                  {item.name}
+                </div>
+                <div style={{
+                  fontSize: 13, fontWeight: 600, color: theme.primary, marginTop: 4,
+                  fontFamily: 'var(--font-outfit), sans-serif',
+                }}>
+                  {formatPrice(item.price)}
+                </div>
               </div>
-
-              {/* Contrôles quantité + suppression */}
-              <div className="flex items-center gap-1 shrink-0">
-                {/* Bouton - : réduit la quantité. Si quantité = 1 → supprime l'article */}
-                <button
-                  onClick={function() { cart.updateQuantity(item.id, item.quantity - 1) }}
-                  className="w-7 h-7 rounded-lg bg-fs-cream text-fs-ink font-bold text-sm flex items-center justify-center">
+              {/* Quantité */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <button type="button" onClick={function() { cart.updateQuantity(item.id, item.quantity - 1) }}
+                  style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    border: '1.5px solid #E8DDD0', background: 'white',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, color: '#7C6C58', transition: 'border-color 0.2s',
+                  }}>
                   −
                 </button>
-                {/* Quantité actuelle */}
-                <span className="font-bold text-sm w-5 text-center">{item.quantity}</span>
-                {/* Bouton + : augmente la quantité, respecte le stock max */}
-                <button
-                  onClick={function() {
-                    cart.updateQuantity(
-                      item.id,
-                      item.stock_quantity != null ? Math.min(item.quantity + 1, item.stock_quantity) : item.quantity + 1
-                    )
-                  }}
-                  className="w-7 h-7 rounded-lg font-bold text-sm flex items-center justify-center"
-                  style={{ background: theme.text, color: getContrastText(theme.text) }}>
+                <span style={{
+                  fontSize: 14, fontWeight: 600, color: theme.text, minWidth: 20, textAlign: 'center',
+                  fontFamily: 'var(--font-outfit), sans-serif',
+                }}>
+                  {item.quantity}
+                </span>
+                <button type="button" onClick={function() {
+                  cart.updateQuantity(
+                    item.id,
+                    item.stock_quantity != null ? Math.min(item.quantity + 1, item.stock_quantity) : item.quantity + 1
+                  )
+                }}
+                  style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    border: '1.5px solid #E8DDD0', background: 'white',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, color: '#7C6C58', transition: 'border-color 0.2s',
+                  }}>
                   +
                 </button>
-                {/* Bouton poubelle : supprime complètement l'article du panier */}
-                <button
-                  onClick={function() { cart.removeItem(item.id) }}
-                  className="w-7 h-7 rounded-lg bg-red-50 text-red-400 font-bold text-sm flex items-center justify-center ml-1">
-                  🗑
-                </button>
               </div>
-
-              {/* Sous-total de la ligne */}
-              <p className="font-nunito font-extrabold text-sm shrink-0 w-16 text-right" style={{ color: theme.primary }}>
-                {formatPrice(item.price * item.quantity)}
-              </p>
             </div>
           )
         })}
 
-        {/* Total général */}
-        <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: theme.text, color: getContrastText(theme.text) }}>
-          <span className="font-semibold text-sm">Total · {cart.count} article{cart.count > 1 ? 's' : ''}</span>
-          <span className="font-nunito font-extrabold">{formatPrice(cart.total)}</span>
+        {/* Total */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '16px 0',
+        }}>
+          <span style={{
+            fontSize: 14, color: '#7C6C58',
+            fontFamily: 'var(--font-outfit), sans-serif',
+          }}>
+            Total · {cart.count} article{cart.count > 1 ? 's' : ''}
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-cormorant), serif',
+            fontSize: 22, fontWeight: 600, color: theme.primary,
+          }}>
+            {formatPrice(cart.total)}
+          </span>
         </div>
       </div>
 
-      <form onSubmit={goToPayment} className="px-4 py-5 space-y-4 max-w-md mx-auto">
-        <div>
-          <label className="block text-sm font-semibold mb-1">Votre nom</label>
-          <input name="name" value={form.name} onChange={handleChange} required
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--shop-primary)]"
-                 placeholder="Ex : Kone Aminata" />
+      {/* Ligne séparatrice */}
+      <div style={{ height: 8, background: getLightColor(theme.primary, 0.04) }} />
+
+      {/* Stepper avance visuellement à 2 pour la section infos */}
+      {/* Formulaire infos client */}
+      <div style={{ padding: '20px 20px 0', background: theme.secondary }}>
+        <div style={{
+          fontFamily: 'var(--font-cormorant), serif',
+          fontSize: 18, fontWeight: 600, color: theme.text,
+          marginBottom: 16,
+        }}>
+          Vos informations
         </div>
-        <div>
-          <label className="block text-sm font-semibold mb-1">Telephone</label>
-          <input name="phone" type="tel" value={form.phone} onChange={handleChange} required
-                 className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--shop-primary)]"
-                 placeholder="07 XX XX XX XX" />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold mb-2">Livraison</label>
-          <div className="flex gap-3">
-            <button type="button" onClick={function() { setForm({ ...form, delivery: 'retrait' }) }}
-                    className={'flex-1 py-3 rounded-xl border text-sm font-semibold transition ' +
-                      (form.delivery === 'retrait' ? '' : 'bg-white text-fs-gray border-fs-border')}
-                    style={form.delivery === 'retrait' ? { background: theme.text, color: getContrastText(theme.text), borderColor: theme.text } : undefined}>
-              Retrait
-            </button>
-            <button type="button" onClick={function() { setForm({ ...form, delivery: 'domicile' }) }}
-                    className={'flex-1 py-3 rounded-xl border text-sm font-semibold transition ' +
-                      (form.delivery === 'domicile' ? '' : 'bg-white text-fs-gray border-fs-border')}
-                    style={form.delivery === 'domicile' ? { background: theme.text, color: getContrastText(theme.text), borderColor: theme.text } : undefined}>
-              Domicile
-            </button>
+      </div>
+
+      <form onSubmit={goToPayment} style={{ padding: '0 20px', background: theme.secondary }}>
+        <FormField
+          label="Votre nom" name="name" value={form.name}
+          onChange={handleChange} placeholder="Ex : Kone Aminata"
+          required theme={theme}
+        />
+        <FormField
+          label="Telephone" name="phone" type="tel" value={form.phone}
+          onChange={handleChange} placeholder="07 XX XX XX XX"
+          required theme={theme}
+        />
+
+        {/* Mode de livraison */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{
+            fontSize: 12, fontWeight: 600, color: theme.text,
+            marginBottom: 8, letterSpacing: 0.5,
+            fontFamily: 'var(--font-outfit), sans-serif',
+          }}>
+            Mode de livraison <span style={{ color: theme.primary }}>*</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { id: 'retrait', label: 'Retrait en boutique', desc: 'Venez chercher votre commande' },
+              { id: 'domicile', label: 'Livraison a domicile', desc: 'Recevez chez vous' },
+            ].map(function(option) {
+              var isSelected = form.delivery === option.id
+              return (
+                <button key={option.id} type="button"
+                  onClick={function() { setForm({ ...form, delivery: option.id }) }}
+                  style={{
+                    padding: '14px 16px', borderRadius: 12,
+                    border: isSelected ? '2px solid ' + theme.primary : '1.5px solid #E8DDD0',
+                    background: isSelected ? getLightColor(theme.primary, 0.06) : 'white',
+                    cursor: 'pointer', textAlign: 'left',
+                    transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}
+                >
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%',
+                    border: isSelected ? 'none' : '2px solid #D0C8BC',
+                    background: isSelected ? theme.primary : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'all 0.2s',
+                  }}>
+                    {isSelected && (
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{
+                      fontSize: 14, fontWeight: 500, color: theme.text,
+                      fontFamily: 'var(--font-outfit), sans-serif',
+                    }}>
+                      {option.label}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#7C6C58', marginTop: 2 }}>
+                      {option.desc}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </div>
+
         {form.delivery === 'domicile' && (
-          <div>
-            <label className="block text-sm font-semibold mb-1">Adresse (commune, quartier, repere)</label>
-            <textarea name="address" value={form.address} onChange={handleChange} required rows={3}
-                      className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--shop-primary)] resize-none"
-                      placeholder="Ex : Cocody Angre, Star 8, pres de la pharmacie" />
-          </div>
+          <FormField
+            label="Adresse (commune, quartier, repere)" name="address"
+            value={form.address} onChange={handleChange}
+            placeholder="Ex : Cocody Angre, Star 8, pres de la pharmacie"
+            required multiline rows={3} theme={theme}
+          />
         )}
-        <button type="submit"
-                className="w-full font-bold py-4 rounded-xl transition hover:brightness-110"
-                style={{ background: theme.primary, color: getContrastText(theme.primary) }}>
-          Choisir le mode de paiement
-        </button>
+
+        {/* Bouton suivant */}
+        <div style={{ padding: '8px 0 24px' }}>
+          <button type="submit"
+            style={{
+              width: '100%', padding: '16px 24px',
+              borderRadius: 12, border: 'none',
+              background: theme.primary,
+              color: getContrastText(theme.primary),
+              fontSize: 15, fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-outfit), sans-serif',
+              letterSpacing: 0.5, transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            }}
+            onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.02)' }}
+            onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)' }}
+          >
+            Choisir le mode de paiement
+          </button>
+        </div>
       </form>
+
+      <ShopFooter shop={shop} theme={theme} />
     </div>
   )
 }

@@ -205,7 +205,7 @@ export default function AdminPage() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <h1 className="font-nunito font-black text-base">{shop?.name || 'Mon espace'}</h1>
+              <h1 style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 24, fontWeight: 600, color: 'white' }}>{shop?.name || 'Mon espace'}</h1>
               <HelpButton section="commandes" />
             </div>
             <p className="text-xs text-gray-500">Admin</p>
@@ -232,16 +232,16 @@ export default function AdminPage() {
       <div className="bg-fs-ink px-4 pb-5">
         <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
           <div className="bg-[#2A2218] rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-fs-orange">{countByStatus('nouvelle')}</p>
-            <p className="text-xs text-gray-500">En attente</p>
+            <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#DC5014' }}>{countByStatus('nouvelle')}</p>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, color: '#7C6C58', letterSpacing: 0.5, textTransform: 'uppercase' }}>En attente</p>
           </div>
           <div className="bg-[#2A2218] rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-white">{todayCount}</p>
-            <p className="text-xs text-gray-500">Aujourd hui</p>
+            <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: 'white' }}>{todayCount}</p>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, color: '#7C6C58', letterSpacing: 0.5, textTransform: 'uppercase' }}>Aujourd hui</p>
           </div>
           <div className="bg-[#2A2218] rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-white">{caLivre.toLocaleString()}</p>
-            <p className="text-xs text-gray-500">CA livre (F)</p>
+            <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: 'white' }}>{caLivre.toLocaleString()}</p>
+            <p style={{ fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, color: '#7C6C58', letterSpacing: 0.5, textTransform: 'uppercase' }}>CA livre (F)</p>
           </div>
         </div>
       </div>
@@ -262,12 +262,19 @@ export default function AdminPage() {
           var waLink = livreurLinks[order.id]
           var clientLink = getClientNotifLink(order, order.status)
           return (
-            <div key={order.id} className="bg-white rounded-2xl border border-fs-border p-4">
+            <div key={order.id}
+              style={{
+                background: 'white', borderRadius: 14, border: '1px solid #E8DDD0', padding: 16,
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)' }}
+              onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+            >
               <div className="flex items-center justify-between mb-3">
-                <span className="font-nunito font-extrabold text-sm">{order.order_number}</span>
-                <span className={'px-3 py-1 rounded-full text-xs font-bold ' + statusStyle(order.status)}>{statusLabel(order.status)}</span>
+                <span style={{ fontFamily: 'var(--font-outfit), sans-serif', fontWeight: 600, fontSize: 14 }}>{order.order_number}</span>
+                <span style={{ padding: '3px 12px', borderRadius: 10, fontSize: 11, fontWeight: 600, letterSpacing: 0.5 }} className={statusStyle(order.status)}>{statusLabel(order.status)}</span>
               </div>
-              <p className="text-sm"><strong>{order.customer_name}</strong> · {order.customer_phone}</p>
+              <p className="text-sm"><span style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 16, fontWeight: 600 }}>{order.customer_name}</span> · {order.customer_phone}</p>
               <p className="text-xs text-fs-gray mt-1">{items}</p>              <p className="text-sm font-bold text-fs-orange mt-2">{formatPrice(order.total)}</p> {order.payment_mode && (
                 <p className="text-xs text-fs-gray mt-1">
                   Paiement : <strong>{order.payment_mode}</strong>
@@ -288,7 +295,9 @@ export default function AdminPage() {
                     }
                     supabase.from('orders').update(updates).eq('id', order.id).then(function() { loadData() })
                   }}
-                          className="flex-1 bg-fs-ink text-white text-xs font-bold py-2.5 rounded-xl hover:bg-fs-orange transition">
+                          style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#DC5014', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', transition: 'transform 0.15s, box-shadow 0.15s', flex: 1 }}
+                          onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(220,80,20,0.25)' }}
+                          onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}>
                     {/* Statut nouvelle : label explicite pour l'artisan */}
                     {order.status === 'nouvelle'
                       ? (order.payment_mode === 'especes' ? '✓ Confirmer la commande' : '✓ Paiement reçu · Confirmer')
@@ -327,7 +336,14 @@ export default function AdminPage() {
           )
         })}
         {filtered.length === 0 && (
-          <p className="text-center text-fs-gray2 py-12">Aucune commande</p>
+          <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <div style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 18, fontWeight: 500, color: '#2C1A0E', marginBottom: 8 }}>
+              Aucune commande pour le moment
+            </div>
+            <p style={{ fontSize: 13, color: '#7C6C58', lineHeight: 1.6, fontFamily: 'var(--font-outfit), sans-serif' }}>
+              Les commandes apparaitront ici quand vos clients passeront commande
+            </p>
+          </div>
         )}
       </div>
     </div>

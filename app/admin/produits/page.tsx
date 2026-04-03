@@ -262,7 +262,7 @@ var startEdit = async function(product: any) {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <h1 className="font-nunito font-black text-base">Mes produits</h1>
+              <h1 style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 24, fontWeight: 600, color: 'white' }}>Mes produits</h1>
               <HelpButton section="produits" />
             </div>
             <p className="text-xs text-gray-500">
@@ -284,7 +284,9 @@ var startEdit = async function(product: any) {
                 )
               }
             }}
-            className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl"
+            style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: '#DC5014', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', transition: 'transform 0.15s' }}
+            onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.03)' }}
+            onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)' }}
           >
             + Ajouter
           </button>
@@ -300,26 +302,26 @@ var startEdit = async function(product: any) {
             </h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="block text-sm font-semibold mb-1">Nom du produit</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Nom du produit</label>
                 <input name="name" value={form.name} onChange={handleChange} required
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex : Bague tressée en or" />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Prix (FCFA)</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Prix (FCFA)</label>
                 <input name="price" type="number" value={form.price} onChange={handleChange} required
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex : 15000" />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Description (optionnel)</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Description (optionnel)</label>
                 <textarea name="description" value={form.description} onChange={handleChange} rows={2}
                           className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange resize-none"
                           placeholder="Ex : Fait main, taille ajustable" />
               </div>
               {/* Catégorie du produit — pour organiser le catalogue */}
               <div>
-                <label className="block text-sm font-semibold mb-1">Categorie (optionnel)</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Categorie (optionnel)</label>
                 <input name="category" type="text" value={form.category} onChange={handleChange}
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex: homme, femme, bijoux, sacs..." />
@@ -525,8 +527,15 @@ var startEdit = async function(product: any) {
           var status = getStockStatus(product)
           return (
             <div key={product.id}
-                 className={'bg-white rounded-2xl border border-fs-border p-4 flex gap-4' + (!product.is_active ? ' opacity-50' : '')}>
-              <div className="w-16 h-16 rounded-xl bg-fs-cream flex items-center justify-center shrink-0 overflow-hidden relative">
+                 style={{
+                   background: 'white', borderRadius: 14, border: '1px solid #E8DDD0', padding: 16,
+                   display: 'flex', gap: 16, opacity: !product.is_active ? 0.5 : 1,
+                   transition: 'transform 0.15s, box-shadow 0.15s',
+                 }}
+                 onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)' }}
+                 onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+            >
+              <div style={{ width: 64, height: 64, borderRadius: 10, background: '#FDF8F3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
                 {product.image_url ? (
                   product.image_url.indexOf('images.unsplash.com') !== -1 ? (
                     <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
@@ -539,8 +548,8 @@ var startEdit = async function(product: any) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold text-sm truncate">{product.name}</h3>
-                  <span className="font-nunito font-extrabold text-sm text-fs-orange shrink-0 ml-2">
+                  <h3 style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.name}</h3>
+                  <span style={{ fontFamily: 'var(--font-outfit), sans-serif', color: '#DC5014', fontWeight: 600, fontSize: 14, flexShrink: 0, marginLeft: 8 }}>
                     {formatPrice(product.price)}
                   </span>
                 </div>
@@ -592,9 +601,11 @@ var startEdit = async function(product: any) {
         })}
 
         {products.length === 0 && !showForm && (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">📦</p>
-            <p className="text-fs-gray mb-4">Aucun produit pour le moment</p>
+          <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.3 }}>📦</div>
+            <div style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 18, fontWeight: 500, color: '#2C1A0E', marginBottom: 8 }}>
+              Aucun produit pour le moment
+            </div>
             <button
               onClick={function() {
                 if (canEdit) {
