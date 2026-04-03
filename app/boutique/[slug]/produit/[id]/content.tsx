@@ -174,8 +174,10 @@ export default function ProduitContent() {
         position: 'relative',
         width: '100%',
         aspectRatio: '1',
+        maxHeight: 500,
         background: '#F5EDE5',
         overflow: 'hidden',
+        margin: '0 auto',
       }}>
         {images.length > 0 ? (
           currentImage && currentImage.indexOf('images.unsplash.com') !== -1 ? (
