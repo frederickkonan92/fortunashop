@@ -1,7 +1,7 @@
 'use client'
 
 export default function SupportButton() {
-  var link = 'https://wa.me/33664765696?text=Bonjour%20fortunashop%2C%20j%20ai%20besoin%20d%20aide'
+  var link = 'https://wa.me/33664765696?text=' + encodeURIComponent("Bonjour fortunashop, j'ai besoin d'aide")
 
   return (
     <a href={link} target="_blank"

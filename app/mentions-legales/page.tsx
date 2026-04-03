@@ -46,7 +46,7 @@ export default function MentionsLegalesPage() {
             <li>RCS : [En cours d'immatriculation]</li>
             <li>Directeur Général : Frédérick Konan</li>
             <li>Présidente : [Prénom Nom — à compléter]</li>
-            <li>Email : <a href="mailto:contact@fortunashop.fr" className="text-fs-orange hover:underline">contact@fortunashop.fr</a></li>
+            <li>E-mail : <a href="mailto:contact@fortunashop.fr" className="text-fs-orange hover:underline">contact@fortunashop.fr</a></li>
             <li>Site web : <a href="https://fortunashop.fr" className="text-fs-orange hover:underline">https://fortunashop.fr</a></li>
           </ul>
         </section>
@@ -67,7 +67,7 @@ export default function MentionsLegalesPage() {
             <strong>fortunashop</strong> est une marque commerciale de Fortuna Digital.
           </p>
           <p className="text-fs-gray text-sm leading-relaxed">
-            L'ensemble des contenus présents sur le site (textes, images, logos, éléments graphiques, code source) sont protégés par le droit de la propriété intellectuelle. Toute reproduction, représentation ou diffusion, totale ou partielle, sans autorisation préalable écrite de Fortuna Digital est interdite.
+            L'ensemble des contenus présents sur le site (textes, images, logos, éléments graphiques, code source) est protégé par le droit de la propriété intellectuelle. Toute reproduction, représentation ou diffusion, totale ou partielle, sans autorisation préalable écrite de Fortuna Digital est interdite.
           </p>
         </section>
 

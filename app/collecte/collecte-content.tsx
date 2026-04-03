@@ -175,7 +175,7 @@ export default function CollecteContent() {
               fontSize: 13, color: '#2A7A50', fontWeight: 700,
               marginTop: 8, textAlign: 'center',
             }}>
-              Tout est pret ! Envoie-moi le tout sur WhatsApp
+              Tout est prêt ! Envoie-moi tout sur WhatsApp
             </p>
           )}
         </div>
@@ -235,7 +235,7 @@ export default function CollecteContent() {
                 display: 'inline-block', padding: '3px 10px', borderRadius: 10,
                 background: '#FEF3C7', color: '#D97706', fontSize: 11, fontWeight: 700,
               }}>
-                15 produits et plus — recommandé
+                15 produits et plus — recommandée
               </span>
             </div>
             <p style={{ fontSize: 14, fontWeight: 700, color: '#2C1A0E', margin: '0 0 10px 0' }}>

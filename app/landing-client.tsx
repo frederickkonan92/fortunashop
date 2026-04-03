@@ -193,7 +193,7 @@ export default function LandingClient({
             </Link>
           </div>
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-            {[['7j max', 'Pour livrer votre boutique'], ['0', 'Compétence technique requise'], ['3 plans', 'Adaptés à votre activité']].map(function([val, label]) {
+            {[['7j max', 'Pour livrer votre boutique'], ['0', 'Aucune compétence technique requise'], ['3 plans', 'Adaptés à votre activité']].map(function([val, label]) {
               return (
                 <div key={val} style={{ textAlign: 'center' }}>
                   <div className="nunito" style={{ fontSize: 28, fontWeight: 900 }}>{val}</div>
@@ -317,7 +317,7 @@ export default function LandingClient({
                       letterSpacing: 0.5,
                       fontFamily: 'var(--font-outfit), sans-serif',
                     }}>
-                      Recommande
+                      Recommandé
                     </div>
                   )}
                   {plan.badge && (

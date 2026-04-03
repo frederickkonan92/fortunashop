@@ -55,7 +55,7 @@ export default function LivraisonContent() {
       <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-5xl mb-4">❌</p>
         <h1 className="font-nunito font-extrabold text-xl mb-2">Lien invalide</h1>
-        <p className="text-fs-gray">Ce lien de livraison n existe pas ou a expire.</p>
+        <p className="text-fs-gray">Ce lien de livraison n&apos;existe pas ou a expiré.</p>
       </div>
     )
   }
@@ -64,28 +64,28 @@ export default function LivraisonContent() {
     return (
       <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-5xl mb-4">✅</p>
-        <h1 className="font-nunito font-extrabold text-xl mb-2">Deja confirmee</h1>
-        <p className="text-fs-gray">Cette livraison a deja ete confirmee.</p>
+        <h1 className="font-nunito font-extrabold text-xl mb-2">Déjà confirmée</h1>
+        <p className="text-fs-gray">Cette livraison a déjà été confirmée.</p>
       </div>
     )
   }
 
   if (status === 'confirmed') {
     var themeConfirmed = getThemeColors(shop)
-    var clientMsg = 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' de ' + (shop?.name || 'la boutique') + ' a ete livree avec succes ! Merci pour votre achat.'
+    var clientMsg = 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' de ' + (shop?.name || 'la boutique') + ' a été livrée avec succès ! Merci pour votre achat.'
     var clientWaLink = 'https://wa.me/' + order.customer_phone + '?text=' + encodeURIComponent(clientMsg)
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: themeConfirmed.secondary }}>
         <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg text-center">
           <p className="text-5xl mb-4">🎉</p>
-          <h1 className="font-nunito font-extrabold text-xl mb-2" style={{ color: themeConfirmed.text }}>Livraison confirmee !</h1>
-          <p className="text-fs-gray mb-6">La commande {order.order_number} est marquee comme livree.</p>
+          <h1 className="font-nunito font-extrabold text-xl mb-2" style={{ color: themeConfirmed.text }}>Livraison confirmée !</h1>
+          <p className="text-fs-gray mb-6">La commande {order.order_number} est marquée comme livrée.</p>
           <a href={clientWaLink} target="_blank" rel="noopener noreferrer"
              className="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-xl text-center hover:bg-[#1DA851] transition">
             Notifier le client sur WhatsApp
           </a>
-        <p className="text-xs text-fs-gray2 mt-3">Cliquez pour informer le client que sa commande est livree</p>
+        <p className="text-xs text-fs-gray2 mt-3">Cliquez pour informer le client que sa commande est livrée</p>
         </div>
       </div>
     )
@@ -112,7 +112,7 @@ export default function LivraisonContent() {
             <span className="font-bold">{order.customer_name}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-fs-gray">Telephone</span>
+            <span className="text-fs-gray">Téléphone</span>
             <span className="font-bold">{order.customer_phone}</span>
           </div>
           <div className="flex justify-between text-sm">

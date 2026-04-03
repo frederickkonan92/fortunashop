@@ -326,7 +326,7 @@ var startEdit = async function(product: any) {
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex: homme, femme, bijoux, sacs..." />
                 <p className="text-[11px] text-fs-gray2 mt-1">
-                  Les produits de la meme categorie seront regroupes dans le catalogue
+                  Les produits de la même catégorie seront regroupés dans le catalogue
                 </p>
               </div>
              {hasAddon(shop?.addons, 'stock') && (

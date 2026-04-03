@@ -30,7 +30,7 @@ const outfit = Outfit({
 export const metadata = {
   metadataBase: new URL('https://fortunashop.fr'),
   title: 'fortunashop — Votre boutique en ligne en 7 jours',
-  description: 'Créez votre boutique en ligne professionnelle en 7 jours. Paiement Wave, Orange Money, MTN MoMo. Pour artisans et commerçants en Côte d\'Ivoire.',
+  description: 'Créez votre boutique en ligne professionnelle en 7 jours. Paiement Wave, Orange Money, MTN MoMo. Pour artisans et commerçants en Côte d\u2019Ivoire.',
   openGraph: {
     title: 'fortunashop — Votre boutique en ligne en 7 jours',
     description: 'Créez votre boutique en ligne professionnelle en 7 jours. Paiement Wave, Orange Money, MTN MoMo.',

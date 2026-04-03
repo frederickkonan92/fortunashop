@@ -145,12 +145,12 @@ export default function AdminPage() {
     var suiviLink = baseUrl + '/suivi?cmd=' + order.order_number
     var isRetrait = order.delivery_mode === 'retrait'
     var messages: any = {
-      confirmee: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' chez ' + (shop?.name || 'la boutique') + ' est confirmee ! On prepare votre commande.\n\nSuivre ma commande :\n' + suiviLink,
+      confirmee: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' chez ' + (shop?.name || 'la boutique') + ' est confirmée ! On prépare votre commande.\n\nSuivre ma commande :\n' + suiviLink,
       // Notification retrait : prête à retirer
-      prete: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est prete ! Vous pouvez venir la recuperer en boutique.\n\nSuivre ma commande :\n' + suiviLink,
+      prete: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est prête ! Vous pouvez venir la récupérer en boutique.\n\nSuivre ma commande :\n' + suiviLink,
       // Notification domicile : en route
-      en_livraison: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est en route ! Le livreur arrive bientot.\n\nSuivre ma commande :\n' + suiviLink,
-      livree: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' a ete livree ! Merci pour votre achat chez ' + (shop?.name || 'la boutique') + '.'
+      en_livraison: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' est en route ! Le livreur arrive bientôt.\n\nSuivre ma commande :\n' + suiviLink,
+      livree: 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' a été livrée ! Merci pour votre achat chez ' + (shop?.name || 'la boutique') + '.'
     }
     var msg = messages[forStatus]
     if (!msg) return null
@@ -175,7 +175,7 @@ export default function AdminPage() {
   var tabs = [
     { key: 'all', label: 'Toutes' },
     { key: 'nouvelle', label: 'Nouvelles' },
-    { key: 'confirmee', label: 'Confirmees' },
+    { key: 'confirmee', label: 'Confirmées' },
     { key: 'en_preparation', label: 'En préparation' },
     { key: 'prete', label: 'Prêtes' },
     { key: 'en_livraison', label: 'En livraison' },

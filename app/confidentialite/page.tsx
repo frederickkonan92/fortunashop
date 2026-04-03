@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Données personnelles, cookies et vos droits sur fortunashop.fr.',
   openGraph: {
     title: 'Confidentialité — fortunashop',
-    description: 'Politique de confidentialité fortunashop',
+    description: 'Politique de confidentialité — fortunashop',
     type: 'website',
     url: 'https://fortunashop.fr/confidentialite',
     siteName: 'fortunashop',
@@ -38,7 +38,7 @@ export default function ConfidentialitePage() {
         <section className="mb-8">
           <h2 className="font-nunito font-bold text-lg mb-3 text-fs-ink">Responsable du traitement</h2>
           <p className="text-fs-gray text-sm leading-relaxed">
-            Le responsable du traitement des données personnelles est <strong>Fortuna Digital</strong>, SAS au capital de 500 €, joignable à l'adresse{' '}
+            Le responsable du traitement des données personnelles est <strong>Fortuna Digital</strong>, SAS au capital de 500 €, joignable à l’adresse{' '}
             <a href="mailto:contact@fortunashop.fr" className="text-fs-orange hover:underline">contact@fortunashop.fr</a>.
           </p>
         </section>
@@ -46,7 +46,7 @@ export default function ConfidentialitePage() {
         <section className="mb-8">
           <h2 className="font-nunito font-bold text-lg mb-3 text-fs-ink">Données collectées</h2>
           <p className="text-fs-gray text-sm leading-relaxed mb-2">
-            <strong>Artisans :</strong> nom, email, téléphone, informations de paiement, contenu de la boutique (photos, descriptions de produits, prix).
+            <strong>Artisans :</strong> nom, e-mail, téléphone, informations de paiement, contenu de la boutique (photos, descriptions de produits, prix).
           </p>
           <p className="text-fs-gray text-sm leading-relaxed mb-2">
             <strong>Clients finaux :</strong> nom, téléphone, adresse de livraison (uniquement en cas de livraison à domicile).
@@ -114,7 +114,7 @@ export default function ConfidentialitePage() {
             <li>Droit d'opposition au traitement</li>
           </ul>
           <p className="text-fs-gray text-sm leading-relaxed mt-2">
-            Pour exercer vos droits, envoyez un email à{' '}
+            Pour exercer vos droits, envoyez un e-mail à{' '}
             <a href="mailto:contact@fortunashop.fr" className="text-fs-orange hover:underline">contact@fortunashop.fr</a>.
             Nous nous engageons à vous répondre dans un délai de 30 jours.
           </p>

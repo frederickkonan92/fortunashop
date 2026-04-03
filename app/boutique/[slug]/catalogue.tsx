@@ -34,7 +34,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
         <p className="text-6xl mb-4">🔍</p>
         <h1 className="font-nunito font-extrabold text-xl mb-2">Boutique introuvable</h1>
         <p className="text-fs-gray text-center">
-          Cette boutique n existe pas ou est temporairement hors ligne.
+          Cette boutique n&apos;existe pas ou est temporairement hors ligne.
         </p>
       </div>
     )
@@ -157,7 +157,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
           maxWidth: 340, margin: '0 auto', lineHeight: 1.6,
           fontFamily: 'var(--font-outfit), sans-serif',
         }}>
-          Parcourez nos creations et commandez directement en ligne
+          Parcourez nos créations et commandez directement en ligne
         </p>
         {/* Ligne décorative */}
         <div style={{
@@ -218,13 +218,13 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
           fontFamily: 'var(--font-cormorant), serif',
           fontSize: 18, fontWeight: 600, color: theme.text,
         }}>
-          Nos creations
+          Nos créations
         </div>
         <div style={{
           fontSize: 11, color: '#7C6C58',
           letterSpacing: 1, textTransform: 'uppercase',
         }}>
-          {filteredProducts.length} {filteredProducts.length > 1 ? 'pieces' : 'piece'}
+          {filteredProducts.length} {filteredProducts.length > 1 ? 'pièces' : 'pièce'}
         </div>
       </div>
 
@@ -381,12 +381,12 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
             fontFamily: 'var(--font-cormorant), serif',
             fontSize: 18, fontWeight: 500, marginBottom: 8, color: theme.text,
           }}>
-            {activeCategory ? 'Aucun produit dans cette categorie' : 'Les creations arrivent bientot'}
+            {activeCategory ? 'Aucun produit dans cette catégorie' : 'Les créations arrivent bientôt'}
           </p>
           <p style={{ fontSize: 13, lineHeight: 1.6 }}>
             {activeCategory
-              ? 'Essayez une autre categorie ou revenez bientot'
-              : 'Nous preparons notre catalogue avec soin'
+              ? 'Essayez une autre catégorie ou revenez bientôt'
+              : 'Nous préparons notre catalogue avec soin'
             }
           </p>
         </div>
@@ -521,7 +521,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
         <div style={{ textAlign: 'center' }}>
           <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 11, color: '#7C6C58', textDecoration: 'none' }}>
-            Propulse par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
+            Propulsé par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
           </a>
         </div>
       </footer>

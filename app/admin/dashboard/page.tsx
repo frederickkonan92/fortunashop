@@ -197,7 +197,7 @@ export default function DashboardPage() {
 
   // ── EXPORT CSV ───────────────────────────────────────
   var exportCSV = function() {
-    var headers = 'Numero,Date,Client,Telephone,Produits,Total,Statut,Livraison,Paiement\n'
+    var headers = 'Numéro,Date,Client,Téléphone,Produits,Total,Statut,Livraison,Paiement\n'
     var rows = filteredOrders.map(function(o) {
       var items = (o.order_items || []).map(function(i: any) { return i.product_name }).join(' + ')
       var date = new Date(o.created_at).toLocaleDateString('fr-FR')

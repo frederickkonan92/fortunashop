@@ -104,7 +104,7 @@ export default function SuiviContent() {
       <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-5xl mb-4">🔍</p>
         <h1 className="font-nunito font-extrabold text-xl mb-2">Commande introuvable</h1>
-        <p className="text-fs-gray">Verifiez le numero de commande et reessayez.</p>
+        <p className="text-fs-gray">Vérifiez le numéro de commande et réessayez.</p>
       </div>
     )
   }

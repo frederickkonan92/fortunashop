@@ -103,7 +103,7 @@ export default function LivreursPage() {
                        placeholder="Ex : Moussa" />
               </div>
               <div>
-                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Telephone</label>
+                <label style={{ display: 'block', fontFamily: 'var(--font-outfit), sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: 0.5, color: '#2C1A0E', marginBottom: 4 }}>Téléphone</label>
                 <input name="phone" type="tel" value={form.phone} onChange={handleChange} required
                        className="w-full border border-fs-border rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-fs-orange"
                        placeholder="Ex : 0700000000" />

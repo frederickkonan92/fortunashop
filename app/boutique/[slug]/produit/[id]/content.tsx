@@ -100,7 +100,7 @@ export default function ProduitContent() {
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center" style={{ background: themeEmpty.secondary }}>
         <p className="text-5xl mb-4">🔍</p>
         <h1 className="font-nunito font-extrabold text-xl mb-2" style={{ color: themeEmpty.text }}>Produit introuvable</h1>
-        <Link href={'/boutique/' + slug} className="font-semibold mt-4" style={{ color: themeEmpty.primary }}>Retour a la boutique</Link>
+        <Link href={'/boutique/' + slug} className="font-semibold mt-4" style={{ color: themeEmpty.primary }}>Retour à la boutique</Link>
       </div>
     )
   }
@@ -563,7 +563,7 @@ export default function ProduitContent() {
         <div style={{ textAlign: 'center' }}>
           <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 11, color: '#7C6C58', textDecoration: 'none' }}>
-            Propulse par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
+            Propulsé par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
           </a>
         </div>
       </footer>

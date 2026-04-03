@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!shop) {
     return {
       title: 'Boutique introuvable — fortunashop',
-      description: 'Cette boutique n\'existe pas ou a été supprimée.',
+      description: 'Cette boutique n\u2019existe pas ou a été supprimée.',
     }
   }
 

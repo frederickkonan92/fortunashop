@@ -2,11 +2,11 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Conditions générales d’utilisation — fortunashop',
+  title: 'Conditions générales d\u2019utilisation — fortunashop',
   description: 'CGU du service fortunashop : abonnement, boutiques artisans, responsabilités.',
   openGraph: {
     title: 'CGU — fortunashop',
-    description: 'Conditions générales d’utilisation fortunashop.fr',
+    description: 'Conditions générales d\u2019utilisation fortunashop.fr',
     type: 'website',
     url: 'https://fortunashop.fr/cgu',
     siteName: 'fortunashop',
@@ -30,9 +30,9 @@ export default function CGUPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="font-nunito font-extrabold text-2xl mb-6">Conditions Générales d'Utilisation</h1>
+        <h1 className="font-nunito font-extrabold text-2xl mb-6">Conditions Générales d’Utilisation</h1>
         <p className="text-fs-gray text-sm leading-relaxed mb-6">
-          Date d'effet : 1er avril 2026
+          Date d’effet : 1er avril 2026
         </p>
 
         <h2 className="font-nunito font-extrabold text-xl mb-4 text-fs-ink">Service fortunashop — Artisans</h2>
@@ -68,7 +68,7 @@ export default function CGUPage() {
         <section className="mb-8">
           <h3 className="font-nunito font-bold text-lg mb-3 text-fs-ink">Résiliation</h3>
           <p className="text-fs-gray text-sm leading-relaxed">
-            L'artisan peut résilier son abonnement à tout moment en contactant fortunashop par email ou WhatsApp. La boutique reste active jusqu'à la fin de la période déjà payée. Aucun remboursement au prorata n'est effectué.
+            L'artisan peut résilier son abonnement à tout moment en contactant fortunashop par e-mail ou WhatsApp. La boutique reste active jusqu'à la fin de la période déjà payée. Aucun remboursement au prorata n'est effectué.
           </p>
         </section>
 
@@ -82,7 +82,7 @@ export default function CGUPage() {
         <section className="mb-8">
           <h3 className="font-nunito font-bold text-lg mb-3 text-fs-ink">Disponibilité</h3>
           <p className="text-fs-gray text-sm leading-relaxed">
-            fortunashop s'engage à maintenir le service disponible 99% du temps, hors périodes de maintenance planifiée. fortunashop ne garantit aucun résultat commercial lié à l'utilisation du service.
+            fortunashop s'engage à maintenir le service disponible 99&nbsp;% du temps, hors périodes de maintenance planifiées. fortunashop ne garantit aucun résultat commercial lié à l'utilisation du service.
           </p>
         </section>
 

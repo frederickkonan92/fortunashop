@@ -160,7 +160,7 @@ function ShopFooter({ shop, theme }: any) {
       <div style={{ textAlign: 'center' }}>
         <a href="https://fortunashop.fr" target="_blank" rel="noopener noreferrer"
           style={{ fontSize: 11, color: '#7C6C58', textDecoration: 'none' }}>
-          Propulse par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
+          Propulsé par <span style={{ color: '#DC5014', fontWeight: 600 }}>fortunashop</span>
         </a>
       </div>
     </footer>
@@ -316,7 +316,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
           var onlineStock = Math.max(0, p.stock_quantity - (p.stock_buffer || 0))
           if (onlineStock <= (p.stock_alert || 3)) {
             var msg = onlineStock === 0
-              ? '⚠️ RUPTURE DE STOCK fortunashop\n\n' + p.name + ' est épuisé en ligne.\n\nReapprovisionnez votre stock.'
+              ? '⚠️ RUPTURE DE STOCK fortunashop\n\n' + p.name + ' est épuisé en ligne.\n\nRéapprovisionnez votre stock.'
               : '⚠️ Stock bas fortunashop\n\n' + p.name + ' : ' + onlineStock + ' unités restantes.\n\nPensez à réapprovisionner.'
             var waAlert = 'https://wa.me/' + shop.phone + '?text=' + encodeURIComponent(msg)
             window.open(waAlert, '_blank')
@@ -355,21 +355,21 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
   })
 
   if (form.delivery === 'retrait') {
-    availableModes.push({ id: 'especes', label: 'Especes a la boutique', icon: '💵', desc: 'Payez en especes au retrait' })
+    availableModes.push({ id: 'especes', label: 'Espèces à la boutique', icon: '💵', desc: 'Payez en espèces au retrait' })
   }
 
   var getPaymentInstructions = function() {
     if (paymentMode === 'wave') {
-      return { title: 'Paiement Wave', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero Wave :', number: shop?.wave_number || shop?.phone, steps: ['Ouvrez Wave', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus', 'Ajoutez en commentaire : ' + (confirmation?.orderNumber || '')] }
+      return { title: 'Paiement Wave', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numéro Wave :', number: shop?.wave_number || shop?.phone, steps: ['Ouvrez Wave', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numéro ci-dessus', 'Ajoutez en commentaire : ' + (confirmation?.orderNumber || '')] }
     }
     if (paymentMode === 'orange_money') {
-      return { title: 'Paiement Orange Money', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero Orange Money :', number: shop?.orange_number || shop?.phone, steps: ['Tapez #144#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
+      return { title: 'Paiement Orange Money', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numéro Orange Money :', number: shop?.orange_number || shop?.phone, steps: ['Tapez #144#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numéro ci-dessus'] }
     }
     if (paymentMode === 'mtn_momo') {
-      return { title: 'Paiement MTN MoMo', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numero ci-dessus'] }
+      return { title: 'Paiement MTN MoMo', instructions: 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numéro MTN MoMo :', number: shop?.mtn_number || shop?.phone, steps: ['Tapez *133#', 'Choisissez Transfert', 'Envoyez ' + formatPrice(confirmation?.total || 0) + ' au numéro ci-dessus'] }
     }
     if (paymentMode === 'especes') {
-      return { title: 'Paiement en especes', instructions: 'Payez ' + formatPrice(confirmation?.total || 0) + ' au retrait de votre commande.', number: null, steps: ['Rendez-vous a la boutique', 'Presentez le numero de commande', 'Payez en especes'] }
+      return { title: 'Paiement en espèces', instructions: 'Payez ' + formatPrice(confirmation?.total || 0) + ' au retrait de votre commande.', number: null, steps: ['Rendez-vous à la boutique', 'Présentez le numéro de commande', 'Payez en espèces'] }
     }
     if (paymentMode === 'cb') {
       return { title: 'Paiement par carte', instructions: 'Le paiement par carte sera disponible prochainement.', number: null, steps: [] }
@@ -420,7 +420,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
             fontSize: 24, fontWeight: 500, color: theme.text,
             marginBottom: 8,
           }}>
-            Commande confirmee
+            Commande confirmée
           </h2>
 
           <p style={{
@@ -449,7 +449,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
               textTransform: 'uppercase', marginBottom: 4,
               fontFamily: 'var(--font-outfit), sans-serif',
             }}>
-              Numero de commande
+              Numéro de commande
             </div>
             <div style={{
               fontFamily: 'var(--font-cormorant), serif',
@@ -525,7 +525,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
                 Payez {formatPrice(confirmation.total)} au retrait
               </p>
               <p style={{ fontSize: 12, color: '#7C6C58', marginTop: 4 }}>
-                Presentez le numero {confirmation.orderNumber} a la boutique
+                Présentez le numéro {confirmation.orderNumber} à la boutique
               </p>
             </div>
           </div>
@@ -562,7 +562,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
               fontFamily: 'var(--font-outfit), sans-serif',
               transition: 'all 0.2s',
             }}>
-            Retour a la boutique
+            Retour à la boutique
           </a>
         </div>
 
@@ -590,7 +590,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
             <span style={{
               fontSize: 14, fontWeight: 500,
               fontFamily: 'var(--font-outfit), sans-serif',
-            }}>Total a payer</span>
+            }}>Total à payer</span>
             <span style={{
               fontFamily: 'var(--font-cormorant), serif',
               fontSize: 20, fontWeight: 600,
@@ -713,7 +713,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
             Votre panier est vide
           </p>
           <p style={{ fontSize: 13, color: '#7C6C58', marginBottom: 24, lineHeight: 1.6 }}>
-            Parcourez nos creations et ajoutez vos coups de coeur
+            Parcourez nos créations et ajoutez vos coups de cœur
           </p>
           <a href={'/boutique/' + slug}
             style={{
@@ -867,11 +867,11 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
       <form onSubmit={goToPayment} style={{ padding: '0 20px', background: theme.secondary }}>
         <FormField
           label="Votre nom" name="name" value={form.name}
-          onChange={handleChange} placeholder="Ex : Kone Aminata"
+          onChange={handleChange} placeholder="Ex : Koné Aminata"
           required theme={theme}
         />
         <FormField
-          label="Telephone" name="phone" type="tel" value={form.phone}
+          label="Téléphone" name="phone" type="tel" value={form.phone}
           onChange={handleChange} placeholder="07 XX XX XX XX"
           required theme={theme}
         />
@@ -888,7 +888,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
               { id: 'retrait', label: 'Retrait en boutique', desc: 'Venez chercher votre commande' },
-              { id: 'domicile', label: 'Livraison a domicile', desc: 'Recevez chez vous' },
+              { id: 'domicile', label: 'Livraison à domicile', desc: 'Recevez chez vous' },
             ].map(function(option) {
               var isSelected = form.delivery === option.id
               return (
@@ -933,9 +933,9 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
 
         {form.delivery === 'domicile' && (
           <FormField
-            label="Adresse (commune, quartier, repere)" name="address"
+            label="Adresse (commune, quartier, repère)" name="address"
             value={form.address} onChange={handleChange}
-            placeholder="Ex : Cocody Angre, Star 8, pres de la pharmacie"
+            placeholder="Ex : Cocody Angre, Star 8, près de la pharmacie"
             required multiline rows={3} theme={theme}
           />
         )}

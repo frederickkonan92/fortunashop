@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: 'fortunashop — Boutique en ligne pro en 7 jours',
   description:
-    'Infrastructure e-commerce pour artisans en Côte d\'Ivoire. Tarifs Starter, Pro, Premium. Paiement Wave, Mobile Money, suivi commande.',
+    'Infrastructure e-commerce pour artisans en Côte d\u2019Ivoire. Tarifs Starter, Pro, Premium. Paiement Wave, Mobile Money, suivi commande.',
   alternates: { canonical: 'https://fortunashop.fr/' },
   openGraph: {
     title: 'fortunashop — Votre boutique en ligne en 7 jours',
