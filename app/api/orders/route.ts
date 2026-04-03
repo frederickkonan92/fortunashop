@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     if (error) {
       logError('api/orders', 'Erreur RPC create_order', { error: error.message, shop_id: body.shop_id })
-      return NextResponse.json({ error: 'Erreur création commande', debug: error.message, code: error.code, details: error.details, hint: error.hint }, { status: 500 })
+      return NextResponse.json({ error: 'Erreur création commande' }, { status: 500 })
     }
 
     logInfo('api/orders', 'Nouvelle commande', { shop_id: body.shop_id, total: body.total, order_number: data.order_number })
