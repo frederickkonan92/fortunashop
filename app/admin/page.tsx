@@ -172,6 +172,29 @@ export default function AdminPage() {
       : { nouvelle: 'confirmee', confirmee: 'en_livraison', en_livraison: 'livree' }
     return map[order.status] || null
   }
+  var cancelOrder = async function(order: any) {
+    var confirmed = window.confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.')
+    if (!confirmed) return
+    await supabase.from('orders').update({ status: 'annulee' }).eq('id', order.id)
+    // Remettre le stock des produits commandés
+    var items = order.order_items || []
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i]
+      if (item.product_id) {
+        var prodRes = await supabase.from('products').select('stock_quantity').eq('id', item.product_id).single()
+        if (prodRes.data && prodRes.data.stock_quantity != null) {
+          await supabase.from('products').update({ stock_quantity: prodRes.data.stock_quantity + item.quantity }).eq('id', item.product_id)
+        }
+      }
+    }
+    // Notification WhatsApp au client
+    if (order.customer_phone) {
+      var msg = 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' chez ' + (shop?.name || 'la boutique') + ' a été annulée. Si vous avez des questions, n\'hésitez pas à nous contacter.'
+      window.open('https://wa.me/' + order.customer_phone + '?text=' + encodeURIComponent(msg), '_blank')
+    }
+    loadData()
+  }
+
   var tabs = [
     { key: 'all', label: 'Toutes' },
     { key: 'nouvelle', label: 'Nouvelles' },
@@ -180,6 +203,7 @@ export default function AdminPage() {
     { key: 'prete', label: 'Prêtes' },
     { key: 'en_livraison', label: 'En livraison' },
     { key: 'livree', label: 'Livrées' },
+    { key: 'annulee', label: 'Annulées' },
   ]
   var filtered = filter === 'all' ? orders : orders.filter(function(o) { return o.status === filter })
   var countByStatus = function(s: string) { return orders.filter(function(o) { return o.status === s }).length }
@@ -319,6 +343,15 @@ export default function AdminPage() {
                      className="flex-1 bg-[#25D366] text-white text-xs font-bold py-2.5 rounded-xl text-center">
                     Envoyer au livreur
                   </a>
+                )}
+                {/* Bouton Annuler — visible sauf pour les commandes déjà annulées ou livrées */}
+                {order.status !== 'annulee' && order.status !== 'livree' && (
+                  <button onClick={function() { cancelOrder(order) }}
+                          style={{ padding: '8px 14px', borderRadius: 8, background: 'transparent', border: '1.5px solid #E8DDD0', color: '#7C6C58', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-outfit), sans-serif', transition: 'border-color 0.2s, color 0.2s' }}
+                          onMouseEnter={function(e: any) { e.currentTarget.style.borderColor = '#D32F2F'; e.currentTarget.style.color = '#D32F2F' }}
+                          onMouseLeave={function(e: any) { e.currentTarget.style.borderColor = '#E8DDD0'; e.currentTarget.style.color = '#7C6C58' }}>
+                    Annuler
+                  </button>
                 )}
               </div>
               {/* Bouton notification client — affiché pour tous les statuts sauf "nouvelle" */}
