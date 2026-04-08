@@ -128,7 +128,7 @@ export default function ProduitContent() {
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <a href={'/boutique/' + slug} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
           {shop?.logo_url ? (
             <img src={shop.logo_url} alt={shop.name}
               style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'contain', background: 'white', padding: 3 }} />
@@ -159,7 +159,7 @@ export default function ProduitContent() {
               </div>
             )}
           </div>
-        </div>
+        </a>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 5,
           fontSize: 11, color: 'rgba(255,255,255,0.7)',

@@ -79,7 +79,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <a href={'/boutique/' + shop.slug} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
           {/* Logo ou initiale */}
           {shop.logo_url ? (
             <img src={shop.logo_url} alt={shop.name}
@@ -111,7 +111,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
               </div>
             )}
           </div>
-        </div>
+        </a>
         {/* Badge en ligne */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 5,
