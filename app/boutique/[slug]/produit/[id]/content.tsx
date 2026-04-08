@@ -171,24 +171,19 @@ export default function ProduitContent() {
 
       {/* ÉTAPE 2 — Galerie photo produit améliorée */}
       <div style={{
-        position: 'relative',
         width: '100%',
-        maxHeight: 500,
-        background: '#F5EDE5',
-        overflow: 'hidden',
+        maxWidth: 600,
         margin: '0 auto',
-      }}
-        className="product-hero-image"
-      >
-        <style>{`
-          .product-hero-image { height: 500px; }
-          @media (max-width: 768px) { .product-hero-image { height: auto; max-height: none !important; aspect-ratio: 1; } }
-        `}</style>
+        aspectRatio: '1',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#F5EDE5',
+      }}>
         {images.length > 0 ? (
           currentImage && currentImage.indexOf('images.unsplash.com') !== -1 ? (
             <img src={currentImage} alt={product.name}
               style={{
-                width: '100%', height: '100%', objectFit: 'contain',
+                width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center',
                 transition: 'opacity 0.3s',
               }}
               loading="eager" />
@@ -197,8 +192,8 @@ export default function ProduitContent() {
               src={currentImage}
               alt={product.name}
               fill
-              style={{ objectFit: 'contain', transition: 'opacity 0.3s' }}
-              sizes="100vw"
+              style={{ objectFit: 'contain', objectPosition: 'center', transition: 'opacity 0.3s' }}
+              sizes="(max-width: 600px) 100vw, 600px"
               priority
             />
           ) : null
