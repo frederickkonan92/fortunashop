@@ -256,20 +256,20 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
               {/* ZONE CLIQUABLE : image + infos */}
               <a href={'/boutique/' + shop.slug + '/produit/' + product.id} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                 {/* Image produit */}
-                <div style={{ height: 180, background: '#F5EDE5', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ height: 220, width: '100%', background: '#F5EDE5', position: 'relative', overflow: 'hidden' }}>
                   {product.image_url ? (
                     product.image_url.indexOf('images.unsplash.com') !== -1 ? (
                       <img
                         src={product.image_url}
                         alt={product.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                         loading="lazy" />
                     ) : (
                       <Image
                         src={product.image_url}
                         alt={product.name}
                         fill
-                        className="object-cover"
+                        style={{ objectFit: 'cover', objectPosition: 'center' }}
                         sizes="(max-width: 640px) 50vw, 200px"
                       />
                     )
