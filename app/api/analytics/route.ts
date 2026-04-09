@@ -60,6 +60,12 @@ export async function POST(request: Request) {
 
     var supabase = getSupabaseAdmin()
 
+    // Vérifier que le shop_id existe (évite injection d'events pour un shop inexistant/concurrent)
+    var { data: shopExists } = await supabase.from('shops').select('id').eq('id', body.shop_id).maybeSingle()
+    if (!shopExists) {
+      return NextResponse.json({ error: 'shop_id inconnu' }, { status: 400 })
+    }
+
     // Insérer l'événement
     var { error } = await supabase.from('analytics_events').insert({
       shop_id: body.shop_id,

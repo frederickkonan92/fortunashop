@@ -8,6 +8,7 @@ import { useCart } from '@/components/cart'
 import Link from 'next/link'
 import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
 import { trackPageView, trackAddToCart } from '@/lib/analytics'
+import { getVariantAxes } from '@/lib/variants'
 
 type CatalogueProps = {
   slug: string
@@ -23,33 +24,6 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
   var [popupAxis1, setPopupAxis1] = useState<string | null>(null)
   var [popupAxis2, setPopupAxis2] = useState<string | null>(null)
 
-  // Helper : extraire les axes de variantes d'un produit
-  var getPopupAxes = function(vars: any[]) {
-    var axes: any[] = []
-    var types1: string[] = []
-    vars.forEach(function(v: any) {
-      if (v.variant_type && types1.indexOf(v.variant_type) === -1) types1.push(v.variant_type)
-    })
-    if (types1.length > 0) {
-      var values1: string[] = []
-      vars.forEach(function(v: any) {
-        if (v.variant_type === types1[0] && values1.indexOf(v.variant_value) === -1) values1.push(v.variant_value)
-      })
-      axes.push({ type: types1[0], values: values1 })
-    }
-    var types2: string[] = []
-    vars.forEach(function(v: any) {
-      if (v.variant_type_2 && types2.indexOf(v.variant_type_2) === -1) types2.push(v.variant_type_2)
-    })
-    if (types2.length > 0) {
-      var values2: string[] = []
-      vars.forEach(function(v: any) {
-        if (v.variant_type_2 === types2[0] && v.variant_value_2 && values2.indexOf(v.variant_value_2) === -1) values2.push(v.variant_value_2)
-      })
-      axes.push({ type: types2[0], values: values2 })
-    }
-    return axes
-  }
   var [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   // Sync si les props serveur changent (navigation App Router)
@@ -451,7 +425,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
       {/* POPUP SÉLECTION VARIANTE (multi-axes) */}
 {variantPopup && (function() {
         var popupVars = (variantPopup.product_variants || []).filter(function(v: any) { return v.is_active }).sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
-        var popupAxes = getPopupAxes(popupVars)
+        var popupAxes = getVariantAxes(popupVars)
         // Trouver la variante sélectionnée
         var popupSelectedVariant = (function() {
           if (!popupAxis1) return null

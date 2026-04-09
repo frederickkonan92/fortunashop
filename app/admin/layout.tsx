@@ -20,6 +20,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setChecked(true)
     }
     checkAuth()
+
+    // Écouter les changements d'état d'auth (expiration token, déconnexion)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(function(event: string) {
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_OUT' && pathname !== '/admin/login') {
+          router.push('/admin/login')
+        }
+      }
+    })
+
+    return () => { subscription.unsubscribe() }
   }, [])
 
   if (!checked) {
