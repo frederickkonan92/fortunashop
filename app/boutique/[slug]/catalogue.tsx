@@ -19,7 +19,36 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
   var [products, setProducts] = useState<any[]>(initialProducts)
   var cart = useCart()
   var [variantPopup, setVariantPopup] = useState<any>(null)
-  var [selectedVariant, setSelectedVariant] = useState<any>(null)
+  var [popupAxis1, setPopupAxis1] = useState<string | null>(null)
+  var [popupAxis2, setPopupAxis2] = useState<string | null>(null)
+
+  // Helper : extraire les axes de variantes d'un produit
+  var getPopupAxes = function(vars: any[]) {
+    var axes: any[] = []
+    var types1: string[] = []
+    vars.forEach(function(v: any) {
+      if (v.variant_type && types1.indexOf(v.variant_type) === -1) types1.push(v.variant_type)
+    })
+    if (types1.length > 0) {
+      var values1: string[] = []
+      vars.forEach(function(v: any) {
+        if (v.variant_type === types1[0] && values1.indexOf(v.variant_value) === -1) values1.push(v.variant_value)
+      })
+      axes.push({ type: types1[0], values: values1 })
+    }
+    var types2: string[] = []
+    vars.forEach(function(v: any) {
+      if (v.variant_type_2 && types2.indexOf(v.variant_type_2) === -1) types2.push(v.variant_type_2)
+    })
+    if (types2.length > 0) {
+      var values2: string[] = []
+      vars.forEach(function(v: any) {
+        if (v.variant_type_2 === types2[0] && v.variant_value_2 && values2.indexOf(v.variant_value_2) === -1) values2.push(v.variant_value_2)
+      })
+      axes.push({ type: types2[0], values: values2 })
+    }
+    return axes
+  }
   var [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   // Sync si les props serveur changent (navigation App Router)
@@ -63,6 +92,15 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
   var filteredProducts = activeCategory
     ? products.filter(function(p: any) { return p.category === activeCategory })
     : products
+
+  // Helper : image principale depuis product_images (fallback sur image_url)
+  var getMainImage = function(product: any) {
+    if (product.product_images && product.product_images.length > 0) {
+      var sorted = product.product_images.slice().sort(function(a: any, b: any) { return a.position - b.position })
+      return sorted[0].image_url
+    }
+    return product.image_url
+  }
 
   var cartCount = cart.count
   var cartTotal = cart.total
@@ -257,16 +295,16 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
               <a href={'/boutique/' + shop.slug + '/produit/' + product.id} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                 {/* Image produit */}
                 <div style={{ width: '100%', paddingBottom: '100%', position: 'relative', overflow: 'hidden', borderRadius: '14px 14px 0 0', background: '#F5EDE5' }}>
-                  {product.image_url ? (
-                    product.image_url.indexOf('images.unsplash.com') !== -1 ? (
+                  {getMainImage(product) ? (
+                    getMainImage(product).indexOf('images.unsplash.com') !== -1 ? (
                       <img
-                        src={product.image_url}
+                        src={getMainImage(product)}
                         alt={product.name}
                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
                         loading="lazy" />
                     ) : (
                       <Image
-                        src={product.image_url}
+                        src={getMainImage(product)}
                         alt={product.name}
                         fill
                         style={{ objectFit: 'cover', objectPosition: 'center' }}
@@ -343,7 +381,8 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                   onClick={function(e: any) {
                     e.stopPropagation()
                     if (product.has_variants && product.product_variants?.length > 0) {
-                      setSelectedVariant(null)
+                      setPopupAxis1(null)
+                      setPopupAxis2(null)
                       setVariantPopup(product)
                     } else {
                       handleAdd(product)
@@ -392,12 +431,29 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
         </div>
       )}
 
-      {/* POPUP SÉLECTION VARIANTE */}
-{variantPopup && (
+      {/* POPUP SÉLECTION VARIANTE (multi-axes) */}
+{variantPopup && (function() {
+        var popupVars = (variantPopup.product_variants || []).filter(function(v: any) { return v.is_active }).sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
+        var popupAxes = getPopupAxes(popupVars)
+        // Trouver la variante sélectionnée
+        var popupSelectedVariant = (function() {
+          if (!popupAxis1) return null
+          if (popupAxes.length === 1) return popupVars.find(function(v: any) { return v.variant_value === popupAxis1 }) || null
+          if (popupAxes.length === 2 && popupAxis2) return popupVars.find(function(v: any) { return v.variant_value === popupAxis1 && v.variant_value_2 === popupAxis2 }) || null
+          return null
+        })()
+        var popupCanConfirm = (function() {
+          if (popupAxes.length === 1 && popupAxis1 && popupSelectedVariant) return !(popupSelectedVariant.stock_quantity != null && popupSelectedVariant.stock_quantity <= 0)
+          if (popupAxes.length === 2 && popupAxis1 && popupAxis2 && popupSelectedVariant) return !(popupSelectedVariant.stock_quantity != null && popupSelectedVariant.stock_quantity <= 0)
+          return false
+        })()
+        var popupPrice = popupSelectedVariant?.price_override ?? variantPopup.price
+
+        return (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.4)' }}
-          onClick={function() { setVariantPopup(null); setSelectedVariant(null) }}>
+          onClick={function() { setVariantPopup(null); setPopupAxis1(null); setPopupAxis2(null) }}>
          <div
             className="bg-white w-full max-w-lg rounded-t-2xl p-5 pb-24"
             onClick={function(e) { e.stopPropagation() }}>
@@ -407,81 +463,110 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
               <div>
                 <p className="font-nunito font-extrabold text-base">{variantPopup.name}</p>
                 <p className="text-xs text-fs-gray">
-                  {variantPopup.product_variants[0]?.variant_type === 'color' ? 'Choisir une couleur' :
-                   variantPopup.product_variants[0]?.variant_type === 'size_shoes' ? 'Choisir une pointure' :
-                   variantPopup.product_variants[0]?.variant_type === 'size_clothing' ? 'Choisir une taille' :
-                   'Choisir un modèle'}
+                  {popupAxes.length >= 1 ? popupAxes[0].type : 'Choisir un modèle'}
+                  {popupAxes.length >= 2 ? ' + ' + popupAxes[1].type : ''}
                 </p>
               </div>
               <button
-                onClick={function() { setVariantPopup(null); setSelectedVariant(null) }}
+                onClick={function() { setVariantPopup(null); setPopupAxis1(null); setPopupAxis2(null) }}
                 className="w-8 h-8 rounded-full bg-fs-cream flex items-center justify-center text-fs-gray font-bold">
                 ✕
               </button>
             </div>
 
-            {/* Badges sélectionnables */}
-            <div className="flex flex-wrap gap-2 mb-5">
-              {variantPopup.product_variants
-                .filter(function(v: any) { return v.is_active })
-                .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
-                .map(function(v: any) {
-                  var isOut = v.stock_quantity != null && v.stock_quantity <= 0
-                  var isSelected = selectedVariant?.id === v.id
-                  return (
-                    <button key={v.id}
-                            disabled={isOut}
-                            onClick={function() { setSelectedVariant(isSelected ? null : v) }}
-                            style={
-                              isOut
-                                ? undefined
-                                : isSelected
-                                  ? { background: theme.primary, borderColor: theme.primary, color: getContrastText(theme.primary) }
-                                  : undefined
-                            }
-                            className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
-                              (isOut
-                                ? 'border-fs-border text-fs-border line-through cursor-not-allowed'
-                                : isSelected
-                                  ? ''
-                                  : 'border-fs-border text-fs-ink hover:border-fs-orange')}>
-                      {v.variant_value}
-                      {v.stock_quantity != null && v.stock_quantity > 0 && v.stock_quantity <= 3 && (
-                        <span className="ml-1 text-[10px] text-amber-500">({v.stock_quantity})</span>
-                      )}
-                    </button>
-                  )
-                })}
-            </div>
+            {/* Axe 1 */}
+            {popupAxes.length >= 1 && (
+              <div className="mb-4">
+                <p className="text-xs font-bold text-fs-gray mb-2">{popupAxes[0].type}</p>
+                <div className="flex flex-wrap gap-2">
+                  {popupAxes[0].values.map(function(value: string) {
+                    var isSelected = popupAxis1 === value
+                    var hasStock = popupVars.some(function(v: any) {
+                      return v.variant_value === value && (v.stock_quantity === null || v.stock_quantity > 0)
+                    })
+                    return (
+                      <button key={value} type="button"
+                        onClick={function() { setPopupAxis1(isSelected ? null : value); setPopupAxis2(null) }}
+                        style={
+                          !hasStock ? undefined
+                          : isSelected ? { background: theme.primary, borderColor: theme.primary, color: getContrastText(theme.primary) }
+                          : undefined
+                        }
+                        className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
+                          (!hasStock ? 'border-fs-border text-fs-border line-through cursor-not-allowed'
+                          : isSelected ? '' : 'border-fs-border text-fs-ink hover:border-fs-orange')}>
+                        {value}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Axe 2 (si sélection axe 1 + axe 2 existe) */}
+            {popupAxes.length >= 2 && popupAxis1 && (
+              <div className="mb-4">
+                <p className="text-xs font-bold text-fs-gray mb-2">{popupAxes[1].type}</p>
+                <div className="flex flex-wrap gap-2">
+                  {popupAxes[1].values.map(function(value: string) {
+                    var isSelected = popupAxis2 === value
+                    var combo = popupVars.find(function(v: any) {
+                      return v.variant_value === popupAxis1 && v.variant_value_2 === value
+                    })
+                    var hasStock = combo && (combo.stock_quantity === null || combo.stock_quantity > 0)
+                    return (
+                      <button key={value} type="button"
+                        disabled={!hasStock}
+                        onClick={function() { if (hasStock) setPopupAxis2(isSelected ? null : value) }}
+                        style={
+                          !hasStock ? undefined
+                          : isSelected ? { background: theme.primary, borderColor: theme.primary, color: getContrastText(theme.primary) }
+                          : undefined
+                        }
+                        className={'px-4 py-2 rounded-xl border-2 text-sm font-bold transition ' +
+                          (!hasStock ? 'border-fs-border text-fs-border line-through cursor-not-allowed opacity-50'
+                          : isSelected ? '' : 'border-fs-border text-fs-ink hover:border-fs-orange')}>
+                        {value}
+                        {combo && combo.stock_quantity != null && combo.stock_quantity > 0 && combo.stock_quantity <= 3 && (
+                          <span className="ml-1 text-[10px] text-amber-500">({combo.stock_quantity})</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Bouton confirmer */}
             <button
-              disabled={!selectedVariant}
+              disabled={!popupCanConfirm}
               onClick={function() {
-                if (!selectedVariant) return
-                var price = selectedVariant.price_override ?? variantPopup.price
-                var cartId = variantPopup.id + '-' + selectedVariant.variant_value
+                if (!popupSelectedVariant) return
+                var price = popupSelectedVariant.price_override ?? variantPopup.price
+                var variantLabel = popupAxis1 || ''
+                if (popupAxis2) variantLabel += ' / ' + popupAxis2
+                var cartId = variantPopup.id + '-' + variantLabel
                 cart.addItem({
                   id: cartId,
-                  name: variantPopup.name + ' — ' + selectedVariant.variant_value,
+                  name: variantPopup.name + ' — ' + variantLabel,
                   price: price,
                   image_url: variantPopup.image_url,
-                  stock_quantity: selectedVariant.stock_quantity
+                  stock_quantity: popupSelectedVariant.stock_quantity
                 })
                 setVariantPopup(null)
-                setSelectedVariant(null)
+                setPopupAxis1(null)
+                setPopupAxis2(null)
               }}
               className="w-full font-bold py-3.5 rounded-xl transition disabled:opacity-40"
               style={{ background: theme.primary, color: getContrastText(theme.primary) }}>
-              {selectedVariant
-                ? 'Ajouter au panier — ' + (selectedVariant.price_override
-                    ? new Intl.NumberFormat('fr-FR').format(selectedVariant.price_override) + ' FCFA'
-                    : new Intl.NumberFormat('fr-FR').format(variantPopup.price) + ' FCFA')
+              {popupCanConfirm
+                ? 'Ajouter au panier — ' + new Intl.NumberFormat('fr-FR').format(popupPrice) + ' FCFA'
                 : 'Choisir un modèle'}
             </button>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* ÉTAPE 6 — Footer enrichi */}
       <footer style={{

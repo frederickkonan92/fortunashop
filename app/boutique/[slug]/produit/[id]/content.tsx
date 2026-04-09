@@ -21,19 +21,17 @@ export default function ProduitContent() {
   var [loading, setLoading] = useState(true)
   var [added, setAdded] = useState(false)
   var [variants, setVariants] = useState<any[]>([])
-  var [selectedVariant, setSelectedVariant] = useState<any>(null)
-  var [currentImage, setCurrentImage] = useState<string>('')
+  var [selectedAxis1, setSelectedAxis1] = useState<string | null>(null)
+  var [selectedAxis2, setSelectedAxis2] = useState<string | null>(null)
+  var [activeIndex, setActiveIndex] = useState(0)
   var [otherProducts, setOtherProducts] = useState<any[]>([])
 
   useEffect(function() {
     async function load() {
       var shopRes = await supabase.from('shops').select('*').eq('slug', slug).single()
       setShop(shopRes.data)
-      var prodRes = await supabase.from('products').select('*').eq('id', id).single()
+      var prodRes = await supabase.from('products').select('*, product_images (id, image_url, position)').eq('id', id).single()
       setProduct(prodRes.data)
-      if (prodRes.data?.image_url) {
-        setCurrentImage(prodRes.data.image_url)
-      }
       // Charge les variantes si le produit en a
       if (prodRes.data?.has_variants) {
         var varRes = await supabase.from('product_variants')
@@ -57,27 +55,85 @@ export default function ProduitContent() {
     load()
   }, [slug, id])
 
+  // Extraire les axes de variantes (1 ou 2 axes)
+  var getVariantAxes = function(vars: any[]) {
+    var axes: any[] = []
+    // Axe 1
+    var types1: string[] = []
+    vars.forEach(function(v: any) {
+      if (v.variant_type && types1.indexOf(v.variant_type) === -1) types1.push(v.variant_type)
+    })
+    if (types1.length > 0) {
+      var values1: string[] = []
+      vars.forEach(function(v: any) {
+        if (v.variant_type === types1[0] && values1.indexOf(v.variant_value) === -1) values1.push(v.variant_value)
+      })
+      axes.push({ type: types1[0], values: values1 })
+    }
+    // Axe 2 (si existe)
+    var types2: string[] = []
+    vars.forEach(function(v: any) {
+      if (v.variant_type_2 && types2.indexOf(v.variant_type_2) === -1) types2.push(v.variant_type_2)
+    })
+    if (types2.length > 0) {
+      var values2: string[] = []
+      vars.forEach(function(v: any) {
+        if (v.variant_type_2 === types2[0] && v.variant_value_2 && values2.indexOf(v.variant_value_2) === -1) values2.push(v.variant_value_2)
+      })
+      axes.push({ type: types2[0], values: values2 })
+    }
+    return axes
+  }
+
+  var axes = getVariantAxes(variants)
+
+  // Trouver la variante correspondant à la combinaison sélectionnée
+  var getSelectedVariant = function() {
+    if (!selectedAxis1) return null
+    if (axes.length === 1) {
+      return variants.find(function(v: any) { return v.variant_value === selectedAxis1 }) || null
+    }
+    if (axes.length === 2 && selectedAxis2) {
+      return variants.find(function(v: any) {
+        return v.variant_value === selectedAxis1 && v.variant_value_2 === selectedAxis2
+      }) || null
+    }
+    return null
+  }
+
+  var selectedVariant = getSelectedVariant()
+  var currentPrice = selectedVariant && selectedVariant.price_override ? selectedVariant.price_override : product?.price
+  var currentStock = selectedVariant ? selectedVariant.stock_quantity : product?.stock_quantity
+
+  var canAddToCart = (function() {
+    if (!product?.has_variants) return true
+    if (axes.length === 0) return true
+    if (axes.length === 1 && selectedAxis1) return !(currentStock != null && currentStock <= 0)
+    if (axes.length === 2 && selectedAxis1 && selectedAxis2) return !(currentStock != null && currentStock <= 0)
+    return false
+  })()
+
   var addToCart = function() {
     if (!product) return
-    // Si le produit a des variantes, une doit être sélectionnée
-    if (product.has_variants && variants.length > 0 && !selectedVariant) {
+    if (product.has_variants && variants.length > 0 && !canAddToCart) {
       alert('Veuillez choisir une variante avant d\'ajouter au panier.')
       return
     }
-    // Stock : utilise le stock de la variante si elle en a un, sinon stock produit
     var stockSource = selectedVariant?.stock_quantity ?? product.stock_quantity
     var stockOnline = stockSource != null
       ? Math.max(0, stockSource - (product.stock_buffer || 0))
       : 999
-    // Clé unique panier = id produit + variante (ex: "uuid-M" ou "uuid-Rouge")
-    var cartId = selectedVariant ? product.id + '-' + selectedVariant.variant_value : product.id
+    // Clé unique panier avec les 2 axes
+    var variantLabel = ''
+    if (selectedAxis1) variantLabel += selectedAxis1
+    if (selectedAxis2) variantLabel += ' / ' + selectedAxis2
+    var cartId = variantLabel ? product.id + '-' + variantLabel : product.id
     var currentQty = cart.items.find(function(i) { return i.id === cartId })?.quantity || 0
     if (currentQty >= stockOnline) return
-    // Prix : utilise le prix override de la variante si défini
     var price = selectedVariant?.price_override ?? product.price
     cart.addItem({
       id: cartId,
-      name: product.name + (selectedVariant ? ' — ' + selectedVariant.variant_value : ''),
+      name: product.name + (variantLabel ? ' — ' + variantLabel : ''),
       price: price,
       image_url: product.image_url,
       stock_quantity: stockSource
@@ -107,10 +163,19 @@ export default function ProduitContent() {
 
   var theme = getThemeColors(shop)
 
-  // Collecte toutes les photos non nulles
-  var images = [product.image_url, product.image_url_2, product.image_url_3].filter(Boolean) as string[]
+  // Collecte les images depuis product_images (triées par position) avec fallback
+  var images: string[] = (function() {
+    if (product.product_images && product.product_images.length > 0) {
+      return product.product_images.slice().sort(function(a: any, b: any) { return a.position - b.position }).map(function(img: any) { return img.image_url })
+    }
+    return [product.image_url, product.image_url_2, product.image_url_3].filter(Boolean)
+  })()
 
-  var isOutOfStock = product.stock_quantity != null && product.stock_quantity <= 0 && !product.has_variants
+  var isOutOfStock = (function() {
+    if (product.has_variants && selectedVariant) return currentStock != null && currentStock <= 0
+    if (product.has_variants) return false // pas encore sélectionné
+    return product.stock_quantity != null && product.stock_quantity <= 0
+  })()
 
   // cart.count = somme de toutes les quantités (ex: 10 montres + 1 bracelet = 11)
   // cart.items.length = nombre de produits distincts (= 2) → c'était le bug
@@ -169,95 +234,150 @@ export default function ProduitContent() {
         </div>
       </header>
 
-      {/* ÉTAPE 2 — Galerie photo produit améliorée */}
+      {/* ÉTAPE 2 — Carousel photo produit swipeable */}
       <div style={{
+        position: 'relative',
         width: '100%',
         maxWidth: 600,
         margin: '0 auto',
-        aspectRatio: '1',
-        position: 'relative',
         overflow: 'hidden',
-        background: '#F5EDE5',
-      }}>
-        {images.length > 0 ? (
-          currentImage && currentImage.indexOf('images.unsplash.com') !== -1 ? (
-            <img src={currentImage} alt={product.name}
+        touchAction: 'pan-y',
+      }}
+        onTouchStart={function(e: any) {
+          var touch = e.touches[0]
+          e.currentTarget.dataset.startX = String(touch.clientX)
+        }}
+        onTouchEnd={function(e: any) {
+          var startX = parseFloat(e.currentTarget.dataset.startX || '0')
+          var endX = e.changedTouches[0].clientX
+          var diff = startX - endX
+          if (Math.abs(diff) > 50) {
+            if (diff > 0 && activeIndex < images.length - 1) {
+              setActiveIndex(activeIndex + 1)
+            } else if (diff < 0 && activeIndex > 0) {
+              setActiveIndex(activeIndex - 1)
+            }
+          }
+        }}
+      >
+        {/* Image active */}
+        <div style={{
+          width: '100%',
+          aspectRatio: '1',
+          background: '#F5EDE5',
+          position: 'relative',
+        }}>
+          {images[activeIndex] ? (
+            <img src={images[activeIndex]} alt={product.name}
               style={{
-                width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center',
+                width: '100%', height: '100%',
+                objectFit: 'contain', objectPosition: 'center',
                 transition: 'opacity 0.3s',
               }}
-              loading="eager" />
-          ) : currentImage ? (
-            <Image
-              src={currentImage}
-              alt={product.name}
-              fill
-              style={{ objectFit: 'contain', objectPosition: 'center', transition: 'opacity 0.3s' }}
-              sizes="(max-width: 600px) 100vw, 600px"
-              priority
             />
-          ) : null
-        ) : (
+          ) : (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: '100%', color: '#CCC', fontSize: 14,
+            }}>
+              Photo du produit
+            </div>
+          )}
+
+          {/* Badge catégorie */}
+          {product.category && (
+            <span style={{
+              position: 'absolute', top: 16, left: 16,
+              padding: '4px 12px', borderRadius: 12,
+              fontSize: 10, fontWeight: 600, letterSpacing: 1,
+              textTransform: 'uppercase',
+              background: theme.primary, color: getContrastText(theme.primary),
+            }}>
+              {product.category}
+            </span>
+          )}
+
+          {/* Bouton retour */}
+          <button type="button" onClick={function() { window.history.back() }}
+            style={{
+              position: 'absolute', top: 16, right: 16,
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.85)', border: 'none',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.primary} strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Flèches navigation desktop (si plus d'1 image) */}
+          {images.length > 1 && activeIndex > 0 && (
+            <button type="button" onClick={function() { setActiveIndex(activeIndex - 1) }}
+              style={{
+                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.85)', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C1A0E" strokeWidth="2"><path d="M15 19l-7-7 7-7"/></svg>
+            </button>
+          )}
+          {images.length > 1 && activeIndex < images.length - 1 && (
+            <button type="button" onClick={function() { setActiveIndex(activeIndex + 1) }}
+              style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.85)', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C1A0E" strokeWidth="2"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+          )}
+        </div>
+
+        {/* Indicateurs de position (points) */}
+        {images.length > 1 && (
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            height: '100%', color: '#CCC', fontSize: 14,
+            display: 'flex', justifyContent: 'center', gap: 6,
+            padding: '12px 0',
           }}>
-            Photo du produit
+            {images.map(function(_: any, idx: number) {
+              return (
+                <button key={idx} type="button"
+                  onClick={function() { setActiveIndex(idx) }}
+                  style={{
+                    width: activeIndex === idx ? 24 : 8,
+                    height: 8, borderRadius: 4,
+                    background: activeIndex === idx ? theme.primary : '#D0C8BC',
+                    border: 'none', cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    padding: 0,
+                  }}
+                />
+              )
+            })}
           </div>
         )}
-
-        {/* Badge catégorie */}
-        {product.category && (
-          <span style={{
-            position: 'absolute', top: 16, left: 16,
-            padding: '4px 12px', borderRadius: 12,
-            fontSize: 10, fontWeight: 600, letterSpacing: 1,
-            textTransform: 'uppercase',
-            background: theme.primary, color: getContrastText(theme.primary),
-          }}>
-            {product.category}
-          </span>
-        )}
-
-        {/* Bouton retour */}
-        <button type="button"
-          onClick={function() { window.history.back() }}
-          style={{
-            position: 'absolute', top: 16, right: 16,
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.85)', border: 'none',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform 0.2s',
-          }}
-          onMouseEnter={function(e: any) { e.currentTarget.style.transform = 'scale(1.1)' }}
-          onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={theme.primary} strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </button>
       </div>
 
-      {/* Miniatures photos (si plusieurs images) */}
+      {/* Miniatures (si plus de 1 image) */}
       {images.length > 1 && (
         <div style={{
-          display: 'flex', gap: 8, padding: '12px 20px',
+          display: 'flex', gap: 8, padding: '0 20px 12px',
           overflowX: 'auto', background: theme.secondary,
         }}>
           {images.map(function(img: string, idx: number) {
-            var isActive = currentImage === img
+            var isActive = activeIndex === idx
             return (
               <button key={idx} type="button"
-                onClick={function() { setCurrentImage(img) }}
+                onClick={function() { setActiveIndex(idx) }}
                 style={{
                   width: 56, height: 56, borderRadius: 10, overflow: 'hidden',
                   border: isActive ? '2px solid ' + theme.primary : '2px solid transparent',
                   cursor: 'pointer', flexShrink: 0, padding: 0,
                   transition: 'border-color 0.2s',
                   opacity: isActive ? 1 : 0.6,
-                  background: 'transparent',
-                }}
-              >
+                }}>
                 <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </button>
             )
@@ -294,7 +414,7 @@ export default function ProduitContent() {
           marginBottom: 20,
           fontFamily: 'var(--font-outfit), sans-serif',
         }}>
-          {formatPrice(selectedVariant?.price_override ?? product.price)}
+          {formatPrice(currentPrice)}
         </div>
 
         {/* Ligne séparatrice fine */}
@@ -336,80 +456,117 @@ export default function ProduitContent() {
         )}
       </div>
 
-      {/* ÉTAPE 4 — Sélection variantes redesignée */}
-      {product.has_variants && variants.length > 0 && (
-        <div style={{
-          padding: '0 20px 20px', background: theme.secondary,
-        }}>
+      {/* ÉTAPE 4 — Sélection variantes multi-axes */}
+      {/* Axe 1 */}
+      {product.has_variants && axes.length >= 1 && (
+        <div style={{ padding: '0 20px 16px', background: theme.secondary }}>
           <div style={{
             fontSize: 13, fontWeight: 600, color: theme.text,
             marginBottom: 10,
             fontFamily: 'var(--font-outfit), sans-serif',
           }}>
-            {variants[0]?.variant_type === 'color' ? 'Choisir une couleur' :
-             variants[0]?.variant_type === 'size_shoes' ? 'Choisir une pointure' :
-             variants[0]?.variant_type === 'size_clothing' ? 'Choisir une taille' :
-             'Choisir une option'}
-            {selectedVariant && (
-              <span style={{ marginLeft: 8, color: theme.primary }}>{selectedVariant.variant_value}</span>
+            {axes[0].type}
+            {selectedAxis1 && (
+              <span style={{ marginLeft: 8, color: theme.primary }}>{selectedAxis1}</span>
             )}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {variants.map(function(v: any) {
-              var vStock = v.stock_quantity
-              var isOut = vStock != null && vStock <= 0
-              var isSelected = selectedVariant?.id === v.id
+            {axes[0].values.map(function(value: string) {
+              var isSelected = selectedAxis1 === value
+              var hasStock = variants.some(function(v: any) {
+                return v.variant_value === value && (v.stock_quantity === null || v.stock_quantity > 0)
+              })
               return (
-                <button key={v.id} type="button"
-                  onClick={function() { if (!isOut) setSelectedVariant(isSelected ? null : v) }}
-                  disabled={isOut}
+                <button key={value} type="button"
+                  onClick={function() {
+                    setSelectedAxis1(isSelected ? null : value)
+                    setSelectedAxis2(null)
+                  }}
                   style={{
                     padding: '10px 20px', borderRadius: 10,
                     border: isSelected ? '2px solid ' + theme.primary : '1.5px solid #E8DDD0',
                     background: isSelected ? getLightColor(theme.primary, 0.08) : 'white',
-                    color: isOut ? '#CCC' : isSelected ? theme.primary : theme.text,
+                    color: !hasStock ? '#CCC' : isSelected ? theme.primary : theme.text,
                     fontSize: 13, fontWeight: isSelected ? 600 : 400,
-                    cursor: isOut ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
-                    textDecoration: isOut ? 'line-through' : 'none',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    textDecoration: !hasStock ? 'line-through' : 'none',
                     fontFamily: 'var(--font-outfit), sans-serif',
-                  }}
-                >
-                  {v.variant_value}
-                  {vStock != null && vStock > 0 && vStock <= 3 && !isOut && (
-                    <span style={{ display: 'block', fontSize: 11, color: theme.accent, marginTop: 2 }}>
-                      Plus que {vStock}
-                    </span>
-                  )}
-                  {v.price_override && v.price_override !== product.price && (
-                    <span style={{ display: 'block', fontSize: 11, color: theme.accent, marginTop: 2 }}>
-                      {formatPrice(v.price_override)}
+                  }}>
+                  {value}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Axe 2 (s'affiche si axe 1 sélectionné et qu'il y a un axe 2) */}
+      {product.has_variants && axes.length >= 2 && selectedAxis1 && (
+        <div style={{ padding: '0 20px 16px', background: theme.secondary }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: theme.text,
+            marginBottom: 10,
+            fontFamily: 'var(--font-outfit), sans-serif',
+          }}>
+            {axes[1].type}
+            {selectedAxis2 && (
+              <span style={{ marginLeft: 8, color: theme.primary }}>{selectedAxis2}</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {axes[1].values.map(function(value: string) {
+              var isSelected = selectedAxis2 === value
+              var combo = variants.find(function(v: any) {
+                return v.variant_value === selectedAxis1 && v.variant_value_2 === value
+              })
+              var hasStock = combo && (combo.stock_quantity === null || combo.stock_quantity > 0)
+              return (
+                <button key={value} type="button"
+                  onClick={function() { if (hasStock) setSelectedAxis2(isSelected ? null : value) }}
+                  disabled={!hasStock}
+                  style={{
+                    padding: '10px 20px', borderRadius: 10,
+                    border: isSelected ? '2px solid ' + theme.primary : '1.5px solid #E8DDD0',
+                    background: isSelected ? getLightColor(theme.primary, 0.08) : 'white',
+                    color: !hasStock ? '#CCC' : isSelected ? theme.primary : theme.text,
+                    fontSize: 13, fontWeight: isSelected ? 600 : 400,
+                    cursor: !hasStock ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    textDecoration: !hasStock ? 'line-through' : 'none',
+                    fontFamily: 'var(--font-outfit), sans-serif',
+                    opacity: !hasStock ? 0.5 : 1,
+                  }}>
+                  {value}
+                  {combo && combo.stock_quantity !== null && combo.stock_quantity <= 3 && combo.stock_quantity > 0 && (
+                    <span style={{ display: 'block', fontSize: 10, color: '#E65100', marginTop: 2 }}>
+                      Plus que {combo.stock_quantity}
                     </span>
                   )}
                 </button>
               )
             })}
           </div>
-          {/* Stock de la variante sélectionnée */}
-          {selectedVariant && selectedVariant.stock_quantity != null && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 12, marginTop: 12,
-              color: selectedVariant.stock_quantity > 5 ? '#2A7A50' : selectedVariant.stock_quantity > 0 ? '#E65100' : '#D32F2F',
-              fontFamily: 'var(--font-outfit), sans-serif',
-            }}>
-              <div style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: selectedVariant.stock_quantity > 5 ? '#4CAF50' : selectedVariant.stock_quantity > 0 ? '#FF9800' : '#F44336',
-              }} />
-              {selectedVariant.stock_quantity > 5
-                ? 'En stock pour cette option'
-                : selectedVariant.stock_quantity > 0
-                ? 'Plus que ' + selectedVariant.stock_quantity + ' en stock'
-                : 'Rupture de stock'
-              }
-            </div>
-          )}
+        </div>
+      )}
+
+      {/* Indicateur de stock pour la combinaison sélectionnée */}
+      {selectedVariant && selectedVariant.stock_quantity !== null && (
+        <div style={{
+          padding: '0 20px 16px', background: theme.secondary,
+          display: 'flex', alignItems: 'center', gap: 6,
+          fontSize: 12, fontFamily: 'var(--font-outfit), sans-serif',
+          color: selectedVariant.stock_quantity > 5 ? '#2A7A50' : selectedVariant.stock_quantity > 0 ? '#E65100' : '#D32F2F',
+        }}>
+          <div style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: selectedVariant.stock_quantity > 5 ? '#4CAF50' : selectedVariant.stock_quantity > 0 ? '#FF9800' : '#F44336',
+          }} />
+          {selectedVariant.stock_quantity > 5
+            ? 'En stock'
+            : selectedVariant.stock_quantity > 0
+            ? 'Plus que ' + selectedVariant.stock_quantity + ' en stock'
+            : 'Rupture de stock'
+          }
         </div>
       )}
 
@@ -423,25 +580,27 @@ export default function ProduitContent() {
       }}>
         <button type="button"
           onClick={addToCart}
-          disabled={isOutOfStock}
+          disabled={isOutOfStock || !canAddToCart}
           style={{
             width: '100%', padding: '16px 24px',
             borderRadius: 12, border: 'none',
-            background: added ? '#2A7A50' : isOutOfStock ? '#E0D8D0' : theme.primary,
-            color: added ? '#FFFFFF' : isOutOfStock ? '#A0988E' : getContrastText(theme.primary),
-            fontSize: 15, fontWeight: 600, cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+            background: added ? '#2A7A50' : (isOutOfStock || !canAddToCart) ? '#E0D8D0' : theme.primary,
+            color: added ? '#FFFFFF' : (isOutOfStock || !canAddToCart) ? '#A0988E' : getContrastText(theme.primary),
+            fontSize: 15, fontWeight: 600, cursor: (isOutOfStock || !canAddToCart) ? 'not-allowed' : 'pointer',
             fontFamily: 'var(--font-outfit), sans-serif',
             letterSpacing: 0.5,
             transition: 'background 0.2s, transform 0.1s',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           }}
-          onMouseEnter={function(e: any) { if (!isOutOfStock) e.currentTarget.style.transform = 'scale(1.02)' }}
+          onMouseEnter={function(e: any) { if (!isOutOfStock && canAddToCart) e.currentTarget.style.transform = 'scale(1.02)' }}
           onMouseLeave={function(e: any) { e.currentTarget.style.transform = 'scale(1)' }}
         >
           {added ? (
             <>✓ Ajouté au panier !</>
           ) : isOutOfStock ? (
             <>Rupture de stock</>
+          ) : !canAddToCart ? (
+            <>Choisir une variante</>
           ) : (
             <>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"

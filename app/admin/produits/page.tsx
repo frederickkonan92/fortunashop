@@ -15,7 +15,10 @@ export default function ProduitsPage() {
   var [showForm, setShowForm] = useState(false)
   var [editing, setEditing] = useState<any>(null)
   var [loading, setLoading] = useState(false)
- // 3 slots photo : index 0 = photo principale, 1 = photo 2, 2 = photo 3
+ // Multi-photos illimité
+ var [selectedImages, setSelectedImages] = useState<File[]>([])
+ var [existingImages, setExistingImages] = useState<any[]>([])
+ // Legacy 3 slots (pour rétrocompatibilité édition)
  var [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null])
  var [imagePreviews, setImagePreviews] = useState<(string | null)[]>([null, null, null])
  var [form, setForm] = useState({
@@ -31,12 +34,66 @@ var [hasVariants, setHasVariants] = useState(false)
 var [variants, setVariants] = useState<any[]>([])
 var [variantType, setVariantType] = useState('custom')
 var [monthEdits, setMonthEdits] = useState(0)
+// Multi-axes : type et valeurs pour axe 1 et axe 2
+var [variantType1, setVariantType1] = useState('')
+var [variantType2, setVariantType2] = useState('')
+var [values1Input, setValues1Input] = useState('')
+var [values2Input, setValues2Input] = useState('')
+var [combinations, setCombinations] = useState<any[]>([])
 
 var VARIANT_PRESETS: any = {
   size_clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
   size_shoes: ['38', '39', '40', '41', '42', '43', '44', '45'],
   color: ['Noir', 'Blanc', 'Rouge', 'Bleu', 'Vert', 'Jaune', 'Rose', 'Gris'],
   custom: [],
+}
+
+var generateCombinations = function() {
+  var vals1 = values1Input.split(',').map(function(s) { return s.trim() }).filter(function(s) { return s !== '' })
+  if (vals1.length === 0) return
+  var newCombos: any[] = []
+  if (variantType2 && values2Input.trim()) {
+    var vals2 = values2Input.split(',').map(function(s) { return s.trim() }).filter(function(s) { return s !== '' })
+    vals1.forEach(function(v1) {
+      vals2.forEach(function(v2) {
+        // Conserver stock/prix existants si la combinaison existait déjà
+        var existing = combinations.find(function(c) { return c.value1 === v1 && c.value2 === v2 })
+        newCombos.push({
+          value1: v1,
+          value2: v2,
+          stock: existing ? existing.stock : '',
+          priceOverride: existing ? existing.priceOverride : '',
+        })
+      })
+    })
+  } else {
+    vals1.forEach(function(v1) {
+      var existing = combinations.find(function(c) { return c.value1 === v1 && !c.value2 })
+      newCombos.push({
+        value1: v1,
+        value2: '',
+        stock: existing ? existing.stock : '',
+        priceOverride: existing ? existing.priceOverride : '',
+      })
+    })
+  }
+  setCombinations(newCombos)
+}
+
+var updateComboStock = function(idx: number, value: string) {
+  setCombinations(function(prev) {
+    var next = prev.slice()
+    next[idx] = { ...next[idx], stock: value }
+    return next
+  })
+}
+
+var updateComboPrice = function(idx: number, value: string) {
+  setCombinations(function(prev) {
+    var next = prev.slice()
+    next[idx] = { ...next[idx], priceOverride: value }
+    return next
+  })
 }
 
 var addVariant = function(value: string) {
@@ -117,9 +174,16 @@ var resetForm = function() {
   setShowForm(false)
   setImageFiles([null, null, null])
   setImagePreviews([null, null, null])
+  setSelectedImages([])
+  setExistingImages([])
   setHasVariants(false)
   setVariants([])
   setVariantType('custom')
+  setVariantType1('')
+  setVariantType2('')
+  setValues1Input('')
+  setValues2Input('')
+  setCombinations([])
 }
 
 
@@ -134,6 +198,12 @@ var startEdit = async function(product: any) {
     category: product.category || '',
   })
   setEditing(product)
+  // Charger les images existantes depuis product_images
+  var imgs = product.product_images && product.product_images.length > 0
+    ? product.product_images.slice().sort(function(a: any, b: any) { return a.position - b.position })
+    : []
+  setExistingImages(imgs)
+  setSelectedImages([])
   setImagePreviews([product.image_url || null, product.image_url_2 || null, product.image_url_3 || null])
   setImageFiles([null, null, null])
   setHasVariants(product.has_variants || false)
@@ -145,6 +215,55 @@ var startEdit = async function(product: any) {
     })
     setVariants(loaded)
     if (loaded.length > 0) setVariantType(loaded[0].variant_type)
+    // Charger les axes multi-combinaisons si variant_type_2 existe
+    if (loaded.length > 0 && loaded[0].variant_type_2) {
+      setVariantType1(loaded[0].variant_type || '')
+      setVariantType2(loaded[0].variant_type_2 || '')
+      // Extraire les valeurs uniques
+      var v1s: string[] = []
+      var v2s: string[] = []
+      loaded.forEach(function(v: any) {
+        if (v.variant_value && v1s.indexOf(v.variant_value) === -1) v1s.push(v.variant_value)
+        if (v.variant_value_2 && v2s.indexOf(v.variant_value_2) === -1) v2s.push(v.variant_value_2)
+      })
+      setValues1Input(v1s.join(', '))
+      setValues2Input(v2s.join(', '))
+      // Reconstituer les combinaisons
+      var combos = loaded.map(function(v: any) {
+        return {
+          value1: v.variant_value,
+          value2: v.variant_value_2 || '',
+          stock: v.stock_quantity !== '' ? String(v.stock_quantity) : '',
+          priceOverride: v.price_override !== '' ? String(v.price_override) : '',
+        }
+      })
+      setCombinations(combos)
+    } else if (loaded.length > 0) {
+      // Mode 1 axe : pré-remplir variantType1 et values1Input
+      setVariantType1(loaded[0].variant_type || '')
+      setVariantType2('')
+      var v1sOnly: string[] = []
+      loaded.forEach(function(v: any) {
+        if (v.variant_value && v1sOnly.indexOf(v.variant_value) === -1) v1sOnly.push(v.variant_value)
+      })
+      setValues1Input(v1sOnly.join(', '))
+      setValues2Input('')
+      var combosOnly = loaded.map(function(v: any) {
+        return {
+          value1: v.variant_value,
+          value2: '',
+          stock: v.stock_quantity !== '' ? String(v.stock_quantity) : '',
+          priceOverride: v.price_override !== '' ? String(v.price_override) : '',
+        }
+      })
+      setCombinations(combosOnly)
+    } else {
+      setVariantType1('')
+      setVariantType2('')
+      setValues1Input('')
+      setValues2Input('')
+      setCombinations([])
+    }
   } else {
     setVariants([])
   }
@@ -200,11 +319,49 @@ var startEdit = async function(product: any) {
       productId = insertRes.data?.id
       await supabase.from('catalog_edits').insert({ shop_id: shop.id, action: 'create' })
     }
-    // Sauvegarde des variantes
-    if (hasVariants && productId && variants.length > 0) {
-      // Supprime les anciennes variantes puis réinsère
+    // Upload des nouvelles images dans product_images
+    if (productId && selectedImages.length > 0) {
+      // Détermine la position de départ (après les images existantes)
+      var startPos = existingImages.length
+      for (var si = 0; si < selectedImages.length; si++) {
+        var file = selectedImages[si]
+        var fileName = shop.id + '/' + productId + '-' + si + '-' + Date.now() + '.jpg'
+        var uploadRes = await supabase.storage.from('product-images').upload(fileName, file, { contentType: file.type, upsert: true })
+        if (!uploadRes.error) {
+          var urlData = supabase.storage.from('product-images').getPublicUrl(fileName)
+          await supabase.from('product_images').insert({
+            product_id: productId,
+            image_url: urlData.data.publicUrl,
+            position: startPos + si,
+          })
+          // La première image uploadée = image principale (rétrocompatibilité)
+          if (si === 0 && !imageUrl) {
+            await supabase.from('products').update({ image_url: urlData.data.publicUrl }).eq('id', productId)
+          }
+        }
+      }
+    }
+    // Sauvegarde des variantes (mode combinaisons multi-axes)
+    if (hasVariants && productId && combinations.length > 0) {
       await supabase.from('product_variants').delete().eq('product_id', productId)
-      var variantsToInsert = variants.map(function(v: any, i: number) {
+      var variantsToInsert = combinations.map(function(combo: any, i: number) {
+        return {
+          product_id: productId,
+          variant_type: variantType1 || variantType,
+          variant_value: combo.value1,
+          variant_type_2: combo.value2 ? (variantType2 || null) : null,
+          variant_value_2: combo.value2 || null,
+          stock_quantity: combo.stock !== '' ? parseInt(combo.stock) : null,
+          price_override: combo.priceOverride !== '' ? parseInt(combo.priceOverride) : null,
+          is_active: true,
+          sort_order: i,
+        }
+      })
+      await supabase.from('product_variants').insert(variantsToInsert)
+    } else if (hasVariants && productId && variants.length > 0) {
+      // Fallback ancien mode (ne devrait plus arriver)
+      await supabase.from('product_variants').delete().eq('product_id', productId)
+      var legacyInserts = variants.map(function(v: any, i: number) {
         return {
           product_id: productId,
           variant_type: variantType,
@@ -215,7 +372,7 @@ var startEdit = async function(product: any) {
           sort_order: i,
         }
       })
-      await supabase.from('product_variants').insert(variantsToInsert)
+      await supabase.from('product_variants').insert(legacyInserts)
     } else if (!hasVariants && editing) {
       // Si on désactive les variantes → supprime toutes les variantes
       await supabase.from('product_variants').delete().eq('product_id', productId)
@@ -367,35 +524,71 @@ var startEdit = async function(product: any) {
                 </div>
               )}
               <div className="space-y-3">
-                <label className="block text-sm font-semibold">Photos du produit (max 3)</label>
-                {[0, 1, 2].map(function(index) {
-                  return (
-                    <div key={index}>
-                      <p className="text-xs text-fs-gray mb-1">
-                        {index === 0 ? 'Photo principale *' : 'Photo ' + (index + 1) + ' (optionnelle)'}
-                      </p>
-                      <input type="file" accept="image/*"
-                             onChange={function(e) { handleImageChange(index, e) }}
-                             className="w-full text-sm text-fs-gray file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-fs-orange-pale file:text-fs-orange hover:file:bg-fs-orange hover:file:text-white file:transition file:cursor-pointer" />
-                      {/* Aperçu de la photo si déjà uploadée ou sélectionnée */}
-                      {imagePreviews[index] && (
-                        <div className="mt-2 rounded-xl overflow-hidden border border-fs-border relative h-32 bg-fs-cream">
-                          {imagePreviews[index]!.indexOf('data:') === 0 ? (
-                            <img src={imagePreviews[index]!} alt={'Photo ' + (index + 1)} className="w-full h-32 object-cover" />
-                          ) : (
-                            <Image
-                              src={imagePreviews[index]!}
-                              alt={'Photo ' + (index + 1)}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 100vw, 400px"
-                            />
-                          )}
-                        </div>
-                      )}
+                <label className="block text-sm font-semibold">Photos du produit</label>
+                <input type="file" accept="image/*" multiple
+                  onChange={function(e) {
+                    var files = Array.from(e.target.files || [])
+                    setSelectedImages(function(prev) { return prev.concat(files) })
+                  }}
+                  className="w-full text-sm text-fs-gray file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-fs-orange-pale file:text-fs-orange hover:file:bg-fs-orange hover:file:text-white file:transition file:cursor-pointer" />
+                {/* Images existantes (en édition) */}
+                {existingImages.length > 0 && (
+                  <div>
+                    <p className="text-xs text-fs-gray mb-2">Photos actuelles</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {existingImages.map(function(img: any, idx: number) {
+                        return (
+                          <div key={img.id} style={{ position: 'relative' }}>
+                            <img src={img.image_url} alt=""
+                              style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover' }} />
+                            <button type="button" onClick={function() {
+                              supabase.from('product_images').delete().eq('id', img.id).then(function() {
+                                setExistingImages(function(prev) { return prev.filter(function(_, i) { return i !== idx }) })
+                              })
+                            }}
+                              style={{
+                                position: 'absolute', top: -6, right: -6,
+                                width: 20, height: 20, borderRadius: '50%',
+                                background: '#D32F2F', color: 'white', border: 'none',
+                                cursor: 'pointer', fontSize: 12, display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                              }}>
+                              x
+                            </button>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                  </div>
+                )}
+                {/* Aperçu des nouvelles images sélectionnées */}
+                {selectedImages.length > 0 && (
+                  <div>
+                    <p className="text-xs text-fs-gray mb-2">Nouvelles photos</p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {selectedImages.map(function(file, idx) {
+                        return (
+                          <div key={idx} style={{ position: 'relative' }}>
+                            <img src={URL.createObjectURL(file)} alt=""
+                              style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover' }} />
+                            <button type="button" onClick={function() {
+                              setSelectedImages(function(prev) { return prev.filter(function(_, i) { return i !== idx }) })
+                            }}
+                              style={{
+                                position: 'absolute', top: -6, right: -6,
+                                width: 20, height: 20, borderRadius: '50%',
+                                background: '#D32F2F', color: 'white', border: 'none',
+                                cursor: 'pointer', fontSize: 12, display: 'flex',
+                                alignItems: 'center', justifyContent: 'center',
+                              }}>
+                              x
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <button type="submit" disabled={loading}
@@ -418,98 +611,92 @@ var startEdit = async function(product: any) {
 
                 {hasVariants && (
                   <div className="space-y-3">
-                    {/* TYPE DE VARIANTE */}
+                    {/* TYPE DE VARIANTE 1 */}
                     <div>
-                      <label className="block text-xs font-semibold mb-2">Type de variante</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { key: 'size_clothing', label: '👗 Vêtements', sub: 'XS → XXL' },
-                          { key: 'size_shoes', label: '👟 Chaussures', sub: '38 → 45' },
-                          { key: 'color', label: '🎨 Couleurs', sub: 'Noir, Rouge...' },
-                          { key: 'custom', label: '✏️ Personnalisé', sub: 'Valeurs libres' },
-                        ].map(function(t) {
-                          return (
-                            <button key={t.key} type="button"
-                                    onClick={function() { setVariantType(t.key); setVariants([]) }}
-                                    className={'p-2 rounded-xl border text-left transition ' + (variantType === t.key ? 'border-fs-orange bg-fs-orange-pale' : 'border-fs-border bg-white')}>
-                              <p className={'text-xs font-bold ' + (variantType === t.key ? 'text-fs-orange' : 'text-fs-ink')}>{t.label}</p>
-                              <p className="text-[10px] text-fs-gray">{t.sub}</p>
-                            </button>
-                          )
-                        })}
-                      </div>
+                      <label className="block text-xs font-semibold mb-1">Type de variante 1 (ex: Couleur)</label>
+                      <input type="text" value={variantType1}
+                        onChange={function(e) { setVariantType1(e.target.value) }}
+                        placeholder="Ex: Couleur, Taille, Matiere..."
+                        className="w-full border border-fs-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange" />
                     </div>
 
-                    {/* AJOUT RAPIDE DEPUIS PRESET */}
-                    {variantType !== 'custom' && VARIANT_PRESETS[variantType]?.length > 0 && (
+                    {/* VALEURS AXE 1 */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Valeurs {variantType1 || 'axe 1'} (separees par des virgules)</label>
+                      <input type="text" value={values1Input}
+                        onChange={function(e) { setValues1Input(e.target.value) }}
+                        placeholder="Ex: Noir, Rouge, Bleu, Blanc"
+                        className="w-full border border-fs-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange" />
+                    </div>
+
+                    {/* TYPE DE VARIANTE 2 (optionnel) */}
+                    <div>
+                      <label className="block text-xs font-semibold mb-1">Type de variante 2 (optionnel)</label>
+                      <input type="text" value={variantType2}
+                        onChange={function(e) { setVariantType2(e.target.value) }}
+                        placeholder="Ex: Taille (laissez vide si un seul axe)"
+                        className="w-full border border-fs-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange" />
+                    </div>
+
+                    {/* VALEURS AXE 2 (si axe 2 defini) */}
+                    {variantType2 && (
                       <div>
-                        <p className="text-xs font-semibold mb-2">Ajout rapide</p>
-                        <div className="flex flex-wrap gap-2">
-                          {VARIANT_PRESETS[variantType].map(function(val: string) {
-                            var already = variants.find(function(v) { return v.variant_value === val })
-                            return (
-                              <button key={val} type="button"
-                                      onClick={function() { already ? removeVariant(variants.findIndex(function(v) { return v.variant_value === val })) : addVariant(val) }}
-                                      className={'px-3 py-1.5 rounded-full text-xs font-bold border transition ' + (already ? 'bg-fs-orange text-white border-fs-orange' : 'bg-white text-fs-gray border-fs-border')}>
-                                {val}
-                              </button>
-                            )
-                          })}
-                        </div>
+                        <label className="block text-xs font-semibold mb-1">Valeurs {variantType2} (separees par des virgules)</label>
+                        <input type="text" value={values2Input}
+                          onChange={function(e) { setValues2Input(e.target.value) }}
+                          placeholder="Ex: S, M, L, XL"
+                          className="w-full border border-fs-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange" />
                       </div>
                     )}
 
-                    {/* AJOUT VALEUR LIBRE */}
-                    {variantType === 'custom' && (
-                      <div className="flex gap-2">
-                        <input id="custom-variant-input" type="text"
-                               placeholder="Ex : Grande taille, Taille unique..."
-                               className="flex-1 border border-fs-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fs-orange" />
-                        <button type="button"
-                                onClick={function() {
-                                  var input = document.getElementById('custom-variant-input') as HTMLInputElement
-                                  if (input?.value) { addVariant(input.value); input.value = '' }
-                                }}
-                                className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">
-                          + Ajouter
-                        </button>
+                    {/* BOUTON GENERER */}
+                    <button type="button" onClick={generateCombinations}
+                      className="bg-fs-orange text-white text-xs font-bold px-4 py-2 rounded-xl">
+                      Generer les combinaisons
+                    </button>
+
+                    {/* TABLEAU DES COMBINAISONS */}
+                    {combinations.length > 0 && (
+                      <div style={{ overflowX: 'auto' }}>
+                        <p className="text-xs font-semibold text-fs-gray mb-2">{combinations.length} combinaison{combinations.length > 1 ? 's' : ''}</p>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid #E8DDD0', fontSize: 11, fontWeight: 600 }}>{variantType1 || 'Axe 1'}</th>
+                              {variantType2 && <th style={{ textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid #E8DDD0', fontSize: 11, fontWeight: 600 }}>{variantType2}</th>}
+                              <th style={{ textAlign: 'center', padding: '6px 8px', borderBottom: '1px solid #E8DDD0', fontSize: 11, fontWeight: 600 }}>Stock</th>
+                              <th style={{ textAlign: 'center', padding: '6px 8px', borderBottom: '1px solid #E8DDD0', fontSize: 11, fontWeight: 600 }}>Prix</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {combinations.map(function(combo: any, idx: number) {
+                              return (
+                                <tr key={idx} style={{ borderBottom: '1px solid #F0EAE0' }}>
+                                  <td style={{ padding: '6px 8px', fontSize: 12, fontWeight: 600 }}>{combo.value1}</td>
+                                  {variantType2 && <td style={{ padding: '6px 8px', fontSize: 12 }}>{combo.value2}</td>}
+                                  <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                    <input type="number" value={combo.stock}
+                                      onChange={function(e) { updateComboStock(idx, e.target.value) }}
+                                      placeholder="-"
+                                      style={{ width: 56, padding: 4, borderRadius: 6, border: '1px solid #E8DDD0', textAlign: 'center', fontSize: 12 }} />
+                                  </td>
+                                  <td style={{ padding: '4px 8px', textAlign: 'center' }}>
+                                    <input type="number" value={combo.priceOverride}
+                                      onChange={function(e) { updateComboPrice(idx, e.target.value) }}
+                                      placeholder="-"
+                                      style={{ width: 72, padding: 4, borderRadius: 6, border: '1px solid #E8DDD0', textAlign: 'center', fontSize: 12 }} />
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                        <p className="text-[10px] text-fs-gray2 mt-2">Laissez le stock vide pour illimite. Le prix remplace le prix du produit pour cette combinaison.</p>
                       </div>
                     )}
 
-                    {/* LISTE DES VARIANTES AJOUTÉES */}
-                    {variants.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-fs-gray">{variants.length} variante{variants.length > 1 ? 's' : ''}</p>
-                        {variants.map(function(v: any, i: number) {
-                          return (
-                            <div key={i} className="bg-fs-cream rounded-xl p-3 flex items-center gap-3">
-                              {/* Nom variante */}
-                              <span className="font-nunito font-extrabold text-xs text-fs-ink w-12 shrink-0">{v.variant_value}</span>
-                              {/* Stock par variante */}
-                              <div className="flex-1">
-                                <input type="number" value={v.stock_quantity}
-                                       onChange={function(e) { updateVariant(i, 'stock_quantity', e.target.value) }}
-                                       placeholder="Stock"
-                                       className="w-full border border-fs-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-fs-orange bg-white" />
-                              </div>
-                              {/* Prix override optionnel */}
-                              <div className="flex-1">
-                                <input type="number" value={v.price_override}
-                                       onChange={function(e) { updateVariant(i, 'price_override', e.target.value) }}
-                                       placeholder="Prix (opt.)"
-                                       className="w-full border border-fs-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-fs-orange bg-white" />
-                              </div>
-                              {/* Supprimer */}
-                              <button type="button" onClick={function() { removeVariant(i) }}
-                                      className="text-red-400 text-xs font-bold shrink-0">✕</button>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-
-                    {variants.length === 0 && (
-                      <p className="text-xs text-fs-gray2 text-center py-2">Aucune variante ajoutée</p>
+                    {combinations.length === 0 && (
+                      <p className="text-xs text-fs-gray2 text-center py-2">Saisissez les valeurs puis cliquez sur &quot;Generer les combinaisons&quot;</p>
                     )}
                   </div>
                 )}
