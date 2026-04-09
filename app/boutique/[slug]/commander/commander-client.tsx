@@ -9,125 +9,15 @@ import Link from 'next/link'
 import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
 import { trackBeginCheckout, trackPurchase } from '@/lib/analytics'
 import { ShopHeader, ShopFooter } from '@/components/shop-layout'
+import { FormField, Stepper } from './commander-parts'
 
 type CommanderClientProps = {
   slug: string
   initialShop: any | null
 }
 
-// Composant champ de formulaire réutilisable
-function FormField({ label, value, onChange, placeholder, type, required, name, theme, multiline, rows }: any) {
-  if (multiline) {
-    return (
-      <div style={{ marginBottom: 16 }}>
-        <label style={{
-          display: 'block', fontSize: 12, fontWeight: 600,
-          color: theme.text, marginBottom: 6, letterSpacing: 0.5,
-          fontFamily: 'var(--font-outfit), sans-serif',
-        }}>
-          {label} {required && <span style={{ color: theme.primary }}>*</span>}
-        </label>
-        <textarea name={name} value={value} onChange={onChange}
-          placeholder={placeholder} required={required} rows={rows || 3}
-          style={{
-            width: '100%', padding: '12px 16px',
-            borderRadius: 10, border: '1.5px solid #E8DDD0',
-            fontSize: 14, color: theme.text,
-            background: 'white',
-            fontFamily: 'var(--font-outfit), sans-serif',
-            transition: 'border-color 0.2s',
-            outline: 'none', resize: 'none',
-          }}
-          onFocus={function(e: any) { e.target.style.borderColor = theme.primary }}
-          onBlur={function(e: any) { e.target.style.borderColor = '#E8DDD0' }}
-        />
-      </div>
-    )
-  }
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{
-        display: 'block', fontSize: 12, fontWeight: 600,
-        color: theme.text, marginBottom: 6, letterSpacing: 0.5,
-        fontFamily: 'var(--font-outfit), sans-serif',
-      }}>
-        {label} {required && <span style={{ color: theme.primary }}>*</span>}
-      </label>
-      <input type={type || 'text'} name={name} value={value} onChange={onChange}
-        placeholder={placeholder} required={required}
-        style={{
-          width: '100%', padding: '12px 16px',
-          borderRadius: 10, border: '1.5px solid #E8DDD0',
-          fontSize: 14, color: theme.text,
-          background: 'white',
-          fontFamily: 'var(--font-outfit), sans-serif',
-          transition: 'border-color 0.2s',
-          outline: 'none',
-        }}
-        onFocus={function(e: any) { e.target.style.borderColor = theme.primary }}
-        onBlur={function(e: any) { e.target.style.borderColor = '#E8DDD0' }}
-      />
-    </div>
-  )
-}
-
-// ShopHeader et ShopFooter importés depuis @/components/shop-layout
-
-// Stepper de progression
-function Stepper({ currentStep, theme }: any) {
-  var steps = [
-    { num: 1, label: 'Panier' },
-    { num: 2, label: 'Livraison' },
-    { num: 3, label: 'Paiement' },
-  ]
-  return (
-    <div style={{
-      padding: '20px 20px 0', background: theme.secondary,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0,
-    }}>
-      {steps.map(function(step, idx) {
-        var isActive = currentStep >= step.num
-        var isCurrent = currentStep === step.num
-        return (
-          <div key={step.num} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: isActive ? theme.primary : '#E8DDD0',
-                color: isActive ? getContrastText(theme.primary) : '#7C6C58',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 600, margin: '0 auto 4px',
-                transition: 'all 0.3s',
-                fontFamily: 'var(--font-outfit), sans-serif',
-              }}>
-                {isActive && step.num < currentStep ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                ) : step.num}
-              </div>
-              <div style={{
-                fontSize: 10, color: isCurrent ? theme.primary : '#7C6C58',
-                fontWeight: isCurrent ? 600 : 400, letterSpacing: 0.5,
-                fontFamily: 'var(--font-outfit), sans-serif',
-              }}>
-                {step.label}
-              </div>
-            </div>
-            {idx < 2 && (
-              <div style={{
-                width: 40, height: 2, margin: '0 8px',
-                background: isActive && step.num < currentStep ? theme.primary : '#E8DDD0',
-                borderRadius: 1, marginBottom: 16,
-                transition: 'background 0.3s',
-              }} />
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+// FormField, Stepper importés depuis ./commander-parts
+// ShopHeader, ShopFooter importés depuis @/components/shop-layout
 
 export default function CommanderClient({ slug, initialShop }: CommanderClientProps) {
   var cart = useCart()
