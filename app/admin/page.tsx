@@ -175,6 +175,19 @@ export default function AdminPage() {
   var cancelOrder = async function(order: any) {
     var confirmed = window.confirm('Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.')
     if (!confirmed) return
+    // Ouvrir WhatsApp AVANT les await (sinon le navigateur bloque le popup)
+    if (order.customer_phone) {
+      var phone = order.customer_phone.replace(/[^0-9]/g, '')
+      if (phone.startsWith('0')) phone = '225' + phone
+      if (!phone.startsWith('225') && phone.length <= 10) phone = '225' + phone
+
+      var msg = 'Bonjour ' + (order.customer_name || 'cher client') + ',\n\n'
+      msg += 'Votre commande ' + (order.order_number || '') + ' a ete annulee.\n\n'
+      msg += 'Si vous avez des questions, n\'hesitez pas a nous contacter.\n\n'
+      msg += 'L\'equipe ' + (shop?.name || 'de la boutique')
+
+      window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank')
+    }
     await supabase.from('orders').update({ status: 'annulee' }).eq('id', order.id)
     // Remettre le stock des produits commandés
     var items = order.order_items || []
@@ -212,19 +225,6 @@ export default function AdminPage() {
           }
         }
       }
-    }
-    // Notification WhatsApp au client
-    if (order.customer_phone) {
-      var phone = order.customer_phone.replace(/[^0-9]/g, '')
-      if (phone.startsWith('0')) phone = '225' + phone
-      if (!phone.startsWith('225') && phone.length <= 10) phone = '225' + phone
-
-      var msg = 'Bonjour ' + (order.customer_name || 'cher client') + ',\n\n'
-      msg += 'Votre commande ' + (order.order_number || '') + ' a ete annulee.\n\n'
-      msg += 'Si vous avez des questions, n\'hesitez pas a nous contacter.\n\n'
-      msg += 'L\'equipe ' + (shop?.name || 'de la boutique')
-
-      window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank')
     }
     loadData()
   }

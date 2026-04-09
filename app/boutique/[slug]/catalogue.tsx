@@ -554,6 +554,26 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
               </div>
             )}
 
+            {/* Stock de la combinaison sélectionnée */}
+            {popupSelectedVariant && popupSelectedVariant.stock_quantity !== null && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12,
+                fontSize: 12, fontFamily: 'var(--font-outfit), sans-serif',
+                color: popupSelectedVariant.stock_quantity > 5 ? '#2A7A50' : popupSelectedVariant.stock_quantity > 0 ? '#E65100' : '#D32F2F',
+              }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: popupSelectedVariant.stock_quantity > 5 ? '#4CAF50' : popupSelectedVariant.stock_quantity > 0 ? '#FF9800' : '#F44336',
+                }} />
+                {popupSelectedVariant.stock_quantity > 5
+                  ? 'En stock'
+                  : popupSelectedVariant.stock_quantity > 0
+                  ? 'Plus que ' + popupSelectedVariant.stock_quantity + ' en stock'
+                  : 'Rupture de stock'
+                }
+              </div>
+            )}
+
             {/* Bouton confirmer */}
             <button
               disabled={!popupCanConfirm}

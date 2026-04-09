@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 var PRODUCT_CATALOG_SELECT =
   'id, name, description, price, image_url, stock_quantity, stock_buffer, sort_order, has_variants, category,' +
   'product_variants (' +
-  'id, variant_value, is_active, sort_order, stock_quantity, price_override, variant_type' +
+  'id, variant_value, is_active, sort_order, stock_quantity, price_override, variant_type, variant_type_2, variant_value_2' +
   '),' +
   'product_images (id, image_url, position)'
 
