@@ -189,43 +189,40 @@ export default function AdminPage() {
       window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank')
     }
     await supabase.from('orders').update({ status: 'annulee' }).eq('id', order.id)
-    // Remettre le stock des produits commandés
+    // Remettre le stock des produits commandés (atomique : stock_quantity + N sans read préalable)
     var items = order.order_items || []
+    var restockPromises: any[] = []
     for (var i = 0; i < items.length; i++) {
       var item = items[i]
-      if (item.product_id) {
-        var prodRes = await supabase.from('products').select('stock_quantity').eq('id', item.product_id).single()
-        if (prodRes.data && prodRes.data.stock_quantity != null) {
-          await supabase.from('products').update({ stock_quantity: prodRes.data.stock_quantity + item.quantity }).eq('id', item.product_id)
+      if (!item.product_id) continue
+      // Restock produit global (atomique via RPC SQL)
+      restockPromises.push(
+        supabase.rpc('increment_stock', { p_product_id: item.product_id, p_qty: item.quantity })
+      )
+      // Restock variante si applicable
+      if (item.variant_id) {
+        restockPromises.push(
+          supabase.rpc('increment_variant_stock', { p_variant_id: item.variant_id, p_qty: item.quantity })
+        )
+      } else if (item.variant_value) {
+        var variantValue = item.variant_value
+        var parts = variantValue.split(' / ')
+        var varQuery = supabase.from('product_variants').select('id').eq('product_id', item.product_id)
+        if (parts.length === 2) {
+          varQuery = varQuery.eq('variant_value', parts[0]).eq('variant_value_2', parts[1])
+        } else {
+          varQuery = varQuery.eq('variant_value', parts[0])
         }
-        // Restock variante si applicable
-        if (item.variant_id) {
-          var varRes = await supabase.from('product_variants').select('stock_quantity').eq('id', item.variant_id).single()
-          if (varRes.data && varRes.data.stock_quantity != null) {
-            await supabase.from('product_variants').update({
-              stock_quantity: varRes.data.stock_quantity + item.quantity
-            }).eq('id', item.variant_id)
-          }
-        } else if (item.variant_value) {
-          // Fallback : chercher par product_id + variant_value
-          var variantValue = item.variant_value
-          // Si le variant_value contient un " / " (multi-axes), séparer
-          var parts = variantValue.split(' / ')
-          var query = supabase.from('product_variants').select('id, stock_quantity').eq('product_id', item.product_id)
-          if (parts.length === 2) {
-            query = query.eq('variant_value', parts[0]).eq('variant_value_2', parts[1])
-          } else {
-            query = query.eq('variant_value', parts[0])
-          }
-          var varRes2 = await query.single()
-          if (varRes2.data && varRes2.data.stock_quantity != null) {
-            await supabase.from('product_variants').update({
-              stock_quantity: varRes2.data.stock_quantity + item.quantity
-            }).eq('id', varRes2.data.id)
-          }
-        }
+        restockPromises.push(
+          varQuery.maybeSingle().then(function(res: any) {
+            if (res.data?.id) {
+              return supabase.rpc('increment_variant_stock', { p_variant_id: res.data.id, p_qty: item.quantity })
+            }
+          })
+        )
       }
     }
+    await Promise.all(restockPromises)
     loadData()
   }
 

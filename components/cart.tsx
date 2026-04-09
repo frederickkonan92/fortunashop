@@ -9,13 +9,26 @@ export function useCart() {
   const [items, setItems] = useState<any[]>([])
 
   useEffect(function() {
-    var saved = localStorage.getItem('fortunashop-cart')
-    if (saved) setItems(JSON.parse(saved))
+    try {
+      var saved = localStorage.getItem('fortunashop-cart')
+      if (saved) {
+        var parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.every(function(i: any) { return i.id && typeof i.price === 'number' && i.price > 0 && typeof i.quantity === 'number' })) {
+          setItems(parsed)
+        }
+      }
+    } catch (e) {
+      // localStorage corrompu ou indisponible (mode privé)
+    }
   }, [])
 
   var saveCart = function(newItems: any[]) {
     setItems(newItems)
-    localStorage.setItem('fortunashop-cart', JSON.stringify(newItems))
+    try {
+      localStorage.setItem('fortunashop-cart', JSON.stringify(newItems))
+    } catch (e) {
+      // localStorage plein ou indisponible (mode privé)
+    }
   }
 
   var addItem = function(product: any) {
@@ -47,7 +60,7 @@ export function useCart() {
 
   var clearCart = function() {
     setItems([])
-    localStorage.removeItem('fortunashop-cart')
+    try { localStorage.removeItem('fortunashop-cart') } catch (e) {}
   }
 
   var total = items.reduce(function(sum, i) { return sum + (i.price * i.quantity) }, 0)

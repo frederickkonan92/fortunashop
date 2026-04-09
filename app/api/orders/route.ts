@@ -44,13 +44,48 @@ export async function POST(request: Request) {
 
     var supabase = getSupabaseAdmin()
 
+    // Validation des prix côté serveur : recalculer le total depuis la BDD
+    var serverTotal = 0
+    for (var i = 0; i < body.items.length; i++) {
+      var orderItem = body.items[i]
+      if (!orderItem.product_id || !orderItem.quantity || orderItem.quantity <= 0) {
+        return NextResponse.json({ error: 'Item invalide' }, { status: 400 })
+      }
+      var prodCheck = await supabase.from('products').select('price').eq('id', orderItem.product_id).single()
+      if (!prodCheck.data) {
+        return NextResponse.json({ error: 'Produit introuvable : ' + orderItem.product_id }, { status: 400 })
+      }
+      // Si variante avec prix override, chercher le prix de la variante
+      var itemPrice = prodCheck.data.price
+      if (orderItem.variant_value) {
+        var parts = String(orderItem.variant_value).split(' / ')
+        var varQuery = supabase.from('product_variants').select('price_override').eq('product_id', orderItem.product_id)
+        if (parts.length === 2) {
+          varQuery = varQuery.eq('variant_value', parts[0]).eq('variant_value_2', parts[1])
+        } else {
+          varQuery = varQuery.eq('variant_value', parts[0])
+        }
+        var varCheck = await varQuery.maybeSingle()
+        if (varCheck.data && varCheck.data.price_override != null) {
+          itemPrice = varCheck.data.price_override
+        }
+      }
+      serverTotal += itemPrice * orderItem.quantity
+    }
+
+    // Tolérance de 1 FCFA pour les arrondis
+    if (Math.abs(serverTotal - body.total) > 1) {
+      logError('api/orders', 'Total client/serveur mismatch', { clientTotal: body.total, serverTotal: serverTotal, shop_id: body.shop_id })
+      return NextResponse.json({ error: 'Le total ne correspond pas aux prix actuels. Rechargez la page.' }, { status: 400 })
+    }
+
     var { data, error } = await supabase.rpc('create_order_with_stock', {
       p_shop_id: body.shop_id,
       p_customer_name: body.customer_name,
       p_customer_phone: body.customer_phone,
       p_customer_address: body.customer_address || null,
       p_delivery_mode: body.delivery_mode || 'retrait',
-      p_total: body.total,
+      p_total: serverTotal,
       p_payment_mode: body.payment_mode,
       p_items: body.items,
     })

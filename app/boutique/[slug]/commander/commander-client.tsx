@@ -232,6 +232,7 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
   var [step, setStep] = useState('form')
   var [confirmation, setConfirmation] = useState<any>(null)
   var [paymentMode, setPaymentMode] = useState('')
+  var [orderError, setOrderError] = useState('')
   var [form, setForm] = useState({
     name: '',
     phone: '',
@@ -306,9 +307,11 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
 
     if (!orderRes.ok || !orderData.success) {
       console.error('Erreur commande:', orderData)
+      setOrderError(orderData.error || 'Une erreur est survenue lors de la commande. Veuillez réessayer.')
       setLoading(false)
       return
     }
+    setOrderError('')
 
     // Alerte WhatsApp stock bas (vérification après commande)
     for (var i = 0; i < cart.items.length; i++) {
@@ -683,6 +686,18 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
           >
             {loading ? 'Traitement en cours...' : 'Valider ma commande — ' + formatPrice(cart.total)}
           </button>
+
+          {/* Message d'erreur commande */}
+          {orderError && (
+            <div style={{
+              marginTop: 12, padding: '12px 16px', borderRadius: 10,
+              background: '#FEF2F2', border: '1px solid #FECACA',
+              color: '#DC2626', fontSize: 13, lineHeight: 1.5,
+              fontFamily: 'var(--font-outfit), sans-serif',
+            }}>
+              {orderError}
+            </div>
+          )}
 
           {/* Bouton retour */}
           <button type="button" onClick={function() { setStep('form') }}
