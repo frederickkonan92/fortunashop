@@ -7,6 +7,7 @@ import { isCheckoutPaymentModeAllowed } from '@/lib/plan-rules'
 import { useCart } from '@/components/cart'
 import Link from 'next/link'
 import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
+import { trackBeginCheckout, trackPurchase } from '@/lib/analytics'
 
 type CommanderClientProps = {
   slug: string
@@ -242,6 +243,13 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
     setShop(initialShop)
   }, [slug, initialShop])
 
+  // Analytics : begin_checkout
+  useEffect(function() {
+    if (initialShop?.id && cart.items.length > 0) {
+      trackBeginCheckout(initialShop.id, cart.total, cart.items.length)
+    }
+  }, [initialShop?.id])
+
   if (!shop) {
     return (
       <div className="min-h-screen bg-fs-cream flex flex-col items-center justify-center px-4">
@@ -337,6 +345,9 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
       total: cart.total,
       customerName: form.name
     })
+
+    // Analytics : purchase
+    if (shop?.id) trackPurchase(shop.id, orderData.order_number, cart.total, cart.items.length)
 
     cart.clearCart()
     setStep('confirmation')

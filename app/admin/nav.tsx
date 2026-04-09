@@ -10,6 +10,7 @@ export default function AdminNav({ shopSlug }: { shopSlug?: string }) {
     { href: '/admin/dashboard', label: 'Dashboard' },
     { href: '/admin/livreurs', label: 'Livreurs' },
     { href: '/admin/ventes', label: '🏪 Ventes' },  // Nouvel onglet vente physique
+    { href: '/admin/analytics', label: 'Analytics' },
   ]
   return (
     <div style={{ padding: '0 16px', background: '#FDF8F3', borderBottom: '1px solid #E8DDD0' }}>

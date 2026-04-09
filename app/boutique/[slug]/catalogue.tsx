@@ -7,6 +7,7 @@ import PageTracker from '@/components/tracker'
 import { useCart } from '@/components/cart'
 import Link from 'next/link'
 import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
+import { trackPageView, trackAddToCart } from '@/lib/analytics'
 
 type CatalogueProps = {
   slug: string
@@ -57,6 +58,11 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
     setProducts(initialProducts)
   }, [slug, initialShop, initialProducts])
 
+  // Analytics : page_view
+  useEffect(function() {
+    if (initialShop?.id) trackPageView(initialShop.id)
+  }, [initialShop?.id])
+
   if (!shop) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-fs-cream px-6">
@@ -71,6 +77,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
 
   var handleAdd = function(product: any) {
     cart.addItem(product)
+    if (shop?.id) trackAddToCart(shop.id, product.id, product.name, product.price)
   }
 
   var getItemQty = function(productId: string) {
@@ -563,6 +570,7 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                   image_url: variantPopup.image_url,
                   stock_quantity: popupSelectedVariant.stock_quantity
                 })
+                if (shop?.id) trackAddToCart(shop.id, variantPopup.id, variantPopup.name, price, variantLabel)
                 setVariantPopup(null)
                 setPopupAxis1(null)
                 setPopupAxis2(null)

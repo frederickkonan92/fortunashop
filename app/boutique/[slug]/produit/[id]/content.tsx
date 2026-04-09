@@ -9,6 +9,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import PageTracker from '@/components/tracker'
 import { getThemeColors, getLightColor, getContrastText } from '@/lib/theme'
+import { trackViewProduct, trackAddToCart } from '@/lib/analytics'
 
 export default function ProduitContent() {
   var params = useParams()
@@ -49,6 +50,10 @@ export default function ProduitContent() {
           .eq('is_active', true)
           .limit(4)
         setOtherProducts(otherRes.data || [])
+      }
+      // Analytics : view_product
+      if (shopRes.data?.id && prodRes.data?.id) {
+        trackViewProduct(shopRes.data.id, prodRes.data.id, prodRes.data.name || '')
       }
       setLoading(false)
     }
@@ -138,6 +143,7 @@ export default function ProduitContent() {
       image_url: product.image_url,
       stock_quantity: stockSource
     })
+    if (shop?.id) trackAddToCart(shop.id, product.id, product.name, price, variantLabel || null)
     setAdded(true)
     setTimeout(function() { setAdded(false) }, 2000)
   }
