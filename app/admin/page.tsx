@@ -185,12 +185,46 @@ export default function AdminPage() {
         if (prodRes.data && prodRes.data.stock_quantity != null) {
           await supabase.from('products').update({ stock_quantity: prodRes.data.stock_quantity + item.quantity }).eq('id', item.product_id)
         }
+        // Restock variante si applicable
+        if (item.variant_id) {
+          var varRes = await supabase.from('product_variants').select('stock_quantity').eq('id', item.variant_id).single()
+          if (varRes.data && varRes.data.stock_quantity != null) {
+            await supabase.from('product_variants').update({
+              stock_quantity: varRes.data.stock_quantity + item.quantity
+            }).eq('id', item.variant_id)
+          }
+        } else if (item.variant_value) {
+          // Fallback : chercher par product_id + variant_value
+          var variantValue = item.variant_value
+          // Si le variant_value contient un " / " (multi-axes), séparer
+          var parts = variantValue.split(' / ')
+          var query = supabase.from('product_variants').select('id, stock_quantity').eq('product_id', item.product_id)
+          if (parts.length === 2) {
+            query = query.eq('variant_value', parts[0]).eq('variant_value_2', parts[1])
+          } else {
+            query = query.eq('variant_value', parts[0])
+          }
+          var varRes2 = await query.single()
+          if (varRes2.data && varRes2.data.stock_quantity != null) {
+            await supabase.from('product_variants').update({
+              stock_quantity: varRes2.data.stock_quantity + item.quantity
+            }).eq('id', varRes2.data.id)
+          }
+        }
       }
     }
     // Notification WhatsApp au client
     if (order.customer_phone) {
-      var msg = 'Bonjour ' + order.customer_name + ', votre commande ' + order.order_number + ' chez ' + (shop?.name || 'la boutique') + ' a été annulée. Si vous avez des questions, n\'hésitez pas à nous contacter.'
-      window.open('https://wa.me/' + order.customer_phone + '?text=' + encodeURIComponent(msg), '_blank')
+      var phone = order.customer_phone.replace(/[^0-9]/g, '')
+      if (phone.startsWith('0')) phone = '225' + phone
+      if (!phone.startsWith('225') && phone.length <= 10) phone = '225' + phone
+
+      var msg = 'Bonjour ' + (order.customer_name || 'cher client') + ',\n\n'
+      msg += 'Votre commande ' + (order.order_number || '') + ' a ete annulee.\n\n'
+      msg += 'Si vous avez des questions, n\'hesitez pas a nous contacter.\n\n'
+      msg += 'L\'equipe ' + (shop?.name || 'de la boutique')
+
+      window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank')
     }
     loadData()
   }
