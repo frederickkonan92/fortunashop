@@ -344,26 +344,36 @@ export default function CatalogueClient({ slug, initialShop, initialProducts }: 
                     </p>
                   )}
 
-                  {/* BADGES VARIANTES */}
+                  {/* BADGES VARIANTES (dédupliquées par axe 1) */}
                   {product.has_variants && product.product_variants && product.product_variants.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                      {product.product_variants
-                        .filter(function(v: any) { return v.is_active })
-                        .sort(function(a: any, b: any) { return a.sort_order - b.sort_order })
-                        .map(function(v: any) {
-                          var isOut = v.stock_quantity != null && v.stock_quantity <= 0
+                      {(function() {
+                        var activeVars = product.product_variants.filter(function(v: any) { return v.is_active })
+                        var uniqueValues: string[] = []
+                        var seen: any = {}
+                        activeVars.sort(function(a: any, b: any) { return a.sort_order - b.sort_order }).forEach(function(v: any) {
+                          if (!seen[v.variant_value]) {
+                            seen[v.variant_value] = true
+                            uniqueValues.push(v.variant_value)
+                          }
+                        })
+                        return uniqueValues.map(function(val: string) {
+                          var hasStock = activeVars.some(function(v: any) {
+                            return v.variant_value === val && (v.stock_quantity === null || v.stock_quantity > 0)
+                          })
                           return (
-                            <span key={v.id}
+                            <span key={val}
                                   style={{
                                     fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                                    border: '1px solid ' + (isOut ? '#E8DDD0' : '#D0C8BC'),
-                                    color: isOut ? '#E8DDD0' : '#7C6C58',
-                                    textDecoration: isOut ? 'line-through' : 'none',
+                                    border: '1px solid ' + (!hasStock ? '#E8DDD0' : '#D0C8BC'),
+                                    color: !hasStock ? '#E8DDD0' : '#7C6C58',
+                                    textDecoration: !hasStock ? 'line-through' : 'none',
                                   }}>
-                              {v.variant_value}
+                              {val}
                             </span>
                           )
-                        })}
+                        })
+                      })()}
                     </div>
                   )}
                 </div>
