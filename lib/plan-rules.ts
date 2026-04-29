@@ -33,6 +33,8 @@ export function isPremiumPlan(plan: string | undefined): boolean {
 
 var PRODUCT_LIMITS: any = { starter: 20, pro: 50, premium: 999999 }
 var CATALOG_EDIT_LIMITS: any = { starter: 10, pro: 25, premium: 999999 }
+// Nombre maximum de livreurs notifiés via WhatsApp par plan
+var LIVREUR_LIMITS: any = { starter: 1, pro: 3, premium: 999999 }
 
 export function getMaxProductsForPlan(plan: string | undefined): number {
   return PRODUCT_LIMITS[plan || 'starter'] || 20
@@ -40,6 +42,10 @@ export function getMaxProductsForPlan(plan: string | undefined): number {
 
 export function getMaxCatalogEditsForPlan(plan: string | undefined): number {
   return CATALOG_EDIT_LIMITS[plan || 'starter'] || 10
+}
+
+export function getMaxLivreursForPlan(plan: string | undefined): number {
+  return LIVREUR_LIMITS[plan || 'starter'] || 1
 }
 
 /**

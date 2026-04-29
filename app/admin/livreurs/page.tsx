@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SHOP_SELECT } from '@/lib/admin-data'
 import { HelpButton } from '@/components/help-panel'
+import { getMaxLivreursForPlan } from '@/lib/plan-rules'
 import AdminNav from '../nav'
 
 export default function LivreursPage() {
@@ -13,8 +14,6 @@ export default function LivreursPage() {
   var [editing, setEditing] = useState<any>(null)
   var [loading, setLoading] = useState(false)
   var [form, setForm] = useState({ name: '', phone: '', zone: '' })
-
-  var planLimits: any = { starter: 1, pro: 3, premium: 999999 }
 
   useEffect(function() { loadData() }, [])
 
@@ -30,7 +29,7 @@ export default function LivreursPage() {
     }
   }
 
-  var maxLivreurs = planLimits[shop?.plan || 'starter'] || 1
+  var maxLivreurs = getMaxLivreursForPlan(shop?.plan)
   var canAdd = livreurs.length < maxLivreurs
 
   var handleChange = function(e: any) { setForm({ ...form, [e.target.name]: e.target.value }) }

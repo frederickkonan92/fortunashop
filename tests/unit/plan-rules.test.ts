@@ -5,6 +5,7 @@ import {
   isPremiumPlan,
   getMaxProductsForPlan,
   getMaxCatalogEditsForPlan,
+  getMaxLivreursForPlan,
   isCheckoutPaymentModeAllowed,
 } from '@/lib/plan-rules'
 
@@ -61,6 +62,20 @@ describe('getMaxCatalogEditsForPlan', function() {
     expect(getMaxCatalogEditsForPlan('pro')).toBe(25)
     expect(getMaxCatalogEditsForPlan('premium')).toBe(999999)
     expect(getMaxCatalogEditsForPlan(undefined)).toBe(10)
+  })
+})
+
+describe('getMaxLivreursForPlan', function() {
+  it('retourne les bonnes limites par plan', function() {
+    expect(getMaxLivreursForPlan('starter')).toBe(1)
+    expect(getMaxLivreursForPlan('pro')).toBe(3)
+    expect(getMaxLivreursForPlan('premium')).toBe(999999)
+  })
+
+  it('plan vide ou inconnu fallback sur starter (1 livreur)', function() {
+    expect(getMaxLivreursForPlan(undefined)).toBe(1)
+    expect(getMaxLivreursForPlan('')).toBe(1)
+    expect(getMaxLivreursForPlan('xxx')).toBe(1)
   })
 })
 
