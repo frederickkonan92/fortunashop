@@ -37,17 +37,18 @@ Active le 2026-04-29 via gh api PUT /repos/frederickkonan92/fortunashop/branches
 
 ## Multi-tenancy
 
-- RLS : audit non execute automatiquement (CLI Supabase n'a pas les permissions sur ce projet).
-  Voir `docs/rls-audit-query.sql` (requete a executer manuellement dans Supabase SQL Editor).
+- RLS : audit complet dans `docs/rls-audit-2026-04-29.md` (genere via `supabase db query --linked`).
+  **14/14 tables** ont RLS active avec au moins 1 policy. **0 alerte P0/P1.**
+- 3 points d'attention a verifier en Session 2 (clauses USING des policies "Anon peut lire").
+- `docs/rls-audit-query.sql` : requete reutilisable pour re-auditer.
 - Pattern admin actuel : auth Supabase -> shops.owner_id = user.id -> filtre shop_id sur toutes les requetes.
 - Middleware global : ABSENT (a ajouter en Session 2).
 
 ## Schema Supabase
 
-- Snapshot : ABSENT.
-  La CLI Supabase n'a pas pu se lier au projet hmtxovrqvslhcsscjjdy.
-  Erreur exacte : "Your account does not have the necessary privileges to access this endpoint".
-  A faire manuellement : pg_dump via la connection string du dashboard Supabase, OU dump SQL via Settings > Database.
+- Snapshot : EN ATTENTE.
+  CLI liee au projet (org Fortuna Team), mais `supabase db dump` necessite Docker Desktop en cours d'execution.
+  A faire : lancer Docker, puis `supabase db dump --schema public > supabase/schema-snapshot.sql`.
 - Migrations versionnees : NON.
 
 ## Next.js
