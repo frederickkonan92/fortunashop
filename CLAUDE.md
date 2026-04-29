@@ -290,6 +290,14 @@ git push
 - CLAUDE.md : ajout section Add-ons avec état d'implémentation
 - CLAUDE.md : démo landing clarifiée → `kente-fashion-test`
 
+### Corrections finales — 2026-04-29
+
+- Fix CB Premium : option grisée dans le checkout avec message "Disponible prochainement" (clic sans effet)
+- Fix limites livreurs : 1 (Starter) / 3 (Pro) / illimité (Premium) centralisées dans `lib/plan-rules.ts` via `getMaxLivreursForPlan` (refactor du `planLimits` inline qui existait déjà dans `app/admin/livreurs/page.tsx`)
+- Cleanup commentaire obsolète "si addon stock" → "natif Pro/Premium, addon Starter" dans le dashboard
+- Tests : 44 → **46** (ajout de 2 tests pour `getMaxLivreursForPlan`)
+- 0 incohérence restante entre landing, code et CLAUDE.md
+
 ### BUG — Modes de paiement Pro/Premium (RÉSOLU)
 - Fichier : `app/boutique/[slug]/commander/page.tsx`
 - Problème : Orange Money et MTN MoMo conditionnés à l'addon `cinetpay` au lieu du plan
