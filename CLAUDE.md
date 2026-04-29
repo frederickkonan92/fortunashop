@@ -153,6 +153,31 @@ Toggle annuel = 2 mois offerts (10 mois payés).
 
 ---
 
+## Add-ons (fonctionnalités à la carte)
+
+Source de vérité : `lib/landing-sections.ts` (`LANDING_ADDONS`)
+
+| Add-on | Prix | Plans | État |
+|---|---|---|---|
+| Lien livraison livreur | 10 000 FCFA/mois | Starter | ✅ Implémenté |
+| Pack Pilotage Dashboard | 15 000 FCFA/mois | Starter | ✅ Implémenté |
+| Gestion des stocks | 10 000 FCFA/mois | Starter (natif Pro/Premium) | ✅ Implémenté |
+| Bundle Stocks + Dashboard | 20 000 FCFA/mois | Starter | ✅ Implémenté |
+| Mobile Money CinetPay | 75 000 FCFA setup | Starter | ⚠️ CinetPay KYC en cours |
+| CB internationale Stripe | 90 000 FCFA setup | Starter · Pro | ⚠️ Stripe non intégré |
+| Rapport + recommandations IA | 10 000 FCFA/mois | Starter · Pro | ✅ Implémenté (Claude Haiku) |
+| Intégration Yango/Uber | 75 000 + 10 000 FCFA | Tous plans | ❌ Non implémenté |
+| Produit supplémentaire | 10 000 FCFA/produit | Starter · Pro | ✅ Implémenté |
+| Multilingue | 20 000 FCFA setup | Tous plans | ❌ Non implémenté |
+| Formation extra | 10 000 FCFA/heure | Tous plans | Service humain |
+| Système d'avis clients | 20 000 FCFA setup | Starter | ❌ Non implémenté |
+| Codes promo & réductions | 20 000 FCFA setup | Tous plans | ❌ Non implémenté |
+| Relance panier abandonné | 35 000 FCFA setup | Starter · Pro | ❌ Non implémenté (KPI seul) |
+| Bannière promo dynamique | 15 000 FCFA setup | Tous plans | ❌ Non implémenté |
+| Kit Migration communauté | 25 000 FCFA setup | Tous plans | Service humain |
+
+---
+
 ## Routes API
 
 | Route | Méthode | Auth | Statut |
@@ -198,9 +223,9 @@ Routes publiques intentionnelles : marquées par un commentaire `// PUBLIC ROUTE
 
 | Slug | Plan | Notes |
 |------|------|-------|
-| boutique-test | Starter | Boutique démo landing |
+| boutique-test | Starter | Boutique test Starter (pour tests internes) |
 | boutique-pro | Pro | Login artisan-pro@test.com |
-| kente-fashion-test | Premium | Addon cinetpay ajouté manuellement |
+| kente-fashion-test | Premium | Boutique démo landing (affichée via "Voir la démo") · Addon cinetpay ajouté manuellement |
 
 ---
 
@@ -255,6 +280,16 @@ git push
 
 ## Bugs connus
 
+### Corrections landing — 2026-04-29
+
+- Fix FAQ Q3 : Pro/Premium ont Orange Money + MoMo natifs (pas en addon)
+- Fix FAQ Q8 : CB Premium "en cours de déploiement" (pas "disponible")
+- Fix stock Pro : gestion des stocks native pour Pro/Premium, addon pour Starter uniquement
+- Ajout mention "bientôt" sur features non implémentées (avis clients, relance panier, codes promo, bannière, CB)
+- Sitemap : exclusion des boutiques test (`boutique-test`, `boutique-pro`, `kente-fashion-test`) de l'indexation Google
+- CLAUDE.md : ajout section Add-ons avec état d'implémentation
+- CLAUDE.md : démo landing clarifiée → `kente-fashion-test`
+
 ### BUG — Modes de paiement Pro/Premium (RÉSOLU)
 - Fichier : `app/boutique/[slug]/commander/page.tsx`
 - Problème : Orange Money et MTN MoMo conditionnés à l'addon `cinetpay` au lieu du plan
@@ -269,7 +304,7 @@ git push
 ## Tâches en cours (backlog priorisé)
 
 ### 🔴 Tier 1 — bloquant pour signer un client
-1. ~~Fix bug modes paiement Pro/Premium~~ → à appliquer
+1. Fix bug modes paiement Pro/Premium — RÉSOLU (`isCheckoutPaymentModeAllowed` dans `lib/plan-rules.ts`)
 2. Test boutique démo en prod
 3. Footer lien fortunashop.fr (boucle acquisition)
 4. Mentions légales / CGU / Confidentialité
