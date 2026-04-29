@@ -7,6 +7,9 @@ var supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Exclut les boutiques de test/démo de l'indexation Google
+var TEST_SLUGS = ['boutique-test', 'boutique-pro', 'kente-fashion-test']
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   var baseUrl = 'https://fortunashop.fr'
 
@@ -27,7 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select('slug, updated_at')
     .eq('is_active', true)
 
-  var shopPages = (shops || []).map(function(shop) {
+  // Filtre les boutiques de test/démo après la requête
+  var publicShops = (shops || []).filter(function(s: any) {
+    return !TEST_SLUGS.includes(s.slug)
+  })
+
+  var shopPages = publicShops.map(function(shop) {
     return {
       url: baseUrl + '/boutique/' + shop.slug,
       lastModified: shop.updated_at ? new Date(shop.updated_at) : new Date(),
@@ -42,7 +50,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .select('id, shop_id, updated_at, shops!inner(slug, is_active)')
     .eq('is_active', true)
 
-  var productPages = (products || []).map(function(product: any) {
+  // Filtre les produits des boutiques de test/démo
+  var publicProducts = (products || []).filter(function(p: any) {
+    return !TEST_SLUGS.includes(p.shops.slug)
+  })
+
+  var productPages = publicProducts.map(function(product: any) {
     return {
       url: baseUrl + '/boutique/' + product.shops.slug + '/produit/' + product.id,
       lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
