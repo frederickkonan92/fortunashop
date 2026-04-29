@@ -298,7 +298,7 @@ var startEdit = async function(product: any) {
       shop_id: shop.id,
       category: form.category.trim() || null,
     }
-    if (hasAddon(shop?.addons, 'stock')) {
+    if ((shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock'))) {
       var bufferQty = parseInt(form.stock_buffer) || 0
       // Stock disponible en ligne = stock total - tampon physique
       var stockOnline = stockQty != null ? Math.max(0, stockQty - bufferQty) : null
@@ -487,7 +487,7 @@ var startEdit = async function(product: any) {
                   Les produits de la même catégorie seront regroupés dans le catalogue
                 </p>
               </div>
-             {hasAddon(shop?.addons, 'stock') && (
+             {(shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock')) && (
                 <div className="bg-fs-cream rounded-xl p-4 space-y-3">
                   <p className="text-xs font-bold text-fs-gray">📦 Gestion du stock</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -659,7 +659,7 @@ var startEdit = async function(product: any) {
                     {product.category}
                   </span>
                 )}
-                {hasAddon(shop?.addons, 'stock') && product.stock_quantity != null && (
+                {(shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock')) && product.stock_quantity != null && (
                   <div className="mb-2">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={'text-[11px] font-bold px-2 py-0.5 rounded-full ' + stockColors[status]}>

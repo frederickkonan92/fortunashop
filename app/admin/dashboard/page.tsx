@@ -153,7 +153,7 @@ export default function DashboardPage() {
       })
     }
   })
-  if (hasAddon(shop?.addons, 'stock')) {
+  if ((shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock'))) {
     filteredPhysical.forEach(function(sale: any) {
       if (!productSales[sale.product_name]) {
         productSales[sale.product_name] = { name: sale.product_name, qtyOnline: 0, qtyPhysical: 0, revenue: 0 }
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                     <p className="font-nunito font-extrabold text-sm text-fs-ink">{formatPrice(caOnline)}</p>
                   </div>
                 </div>
-                {hasAddon(shop?.addons, 'stock') && (
+                {(shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock')) && (
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-fs-ink shrink-0" />
                     <div>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
               )}
 
               {/* VENTES PHYSIQUES — si addon stock */}
-                      {hasAddon(shop?.addons, 'stock') && (
+                      {(shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock')) && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Ventes physiques</p>
                   <p style={{ fontFamily: 'var(--font-cormorant), serif', fontSize: 28, fontWeight: 600, color: '#2C1A0E' }}>{filteredPhysical.length}</p>
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                         <span className="w-1.5 h-1.5 rounded-full bg-fs-orange" />
                         <span className="text-xs text-fs-gray">En ligne : {p.qtyOnline}</span>
                       </div>
-                      {hasAddon(shop?.addons, 'stock') && (
+                      {(shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock')) && (
                         <div className="flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-fs-ink" />
                           <span className="text-xs text-fs-gray">Physique : {p.qtyPhysical}</span>
