@@ -26,7 +26,7 @@ function findRouteFiles(dir: string): string[] {
   const results: string[] = []
 
   function walk(currentDir: string) {
-    let entries: ReturnType<typeof readdirSync>
+    let entries
     try {
       entries = readdirSync(currentDir, { withFileTypes: true })
     } catch {
