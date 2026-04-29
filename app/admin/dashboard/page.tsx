@@ -338,7 +338,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* VENTES PHYSIQUES — si addon stock */}
+              {/* VENTES PHYSIQUES — natif Pro/Premium, addon Starter */}
                       {(shop?.plan === 'pro' || shop?.plan === 'premium' || hasAddon(shop?.addons, 'stock')) && (
                 <div className="bg-white border border-fs-border rounded-2xl p-3 text-center">
                   <p className="text-[10px] text-fs-gray mb-1">Ventes physiques</p>
