@@ -1,3 +1,4 @@
+// PUBLIC ROUTE — checkout client anonyme, validation prix côté serveur
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { logInfo, logError } from '@/lib/logger'

@@ -1,3 +1,4 @@
+// PUBLIC ROUTE — formulaire de contact landing page, pas d'auth requise
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { logInfo, logError } from '@/lib/logger'

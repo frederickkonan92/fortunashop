@@ -1,3 +1,4 @@
+// PUBLIC ROUTE — tracking visiteurs anonymes, rate-limited par IP
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
