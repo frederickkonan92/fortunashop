@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 // Composant recommandations IA — appelle Claude Haiku via /api/recommendations
 export default function AIRecommendations({ shopId }: { shopId: string }) {
@@ -19,9 +20,17 @@ export default function AIRecommendations({ shopId }: { shopId: string }) {
     setLoading(true)
     setError(null)
     try {
+      // Recupere la session Supabase active pour prouver l'identite de l'artisan
+      var { data: sessionData } = await supabase.auth.getSession()
+      var accessToken = sessionData?.session?.access_token || ''
+
       var res = await fetch('/api/recommendations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Envoie le JWT dans le header Authorization (format Bearer)
+          'Authorization': 'Bearer ' + accessToken,
+        },
         body: JSON.stringify({ shop_id: shopId })
       })
       var data = await res.json()

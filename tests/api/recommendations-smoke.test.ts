@@ -6,6 +6,8 @@ describe('POST /api/recommendations (smoke validation)', function() {
     var { POST } = await import('@/app/api/recommendations/route')
     var req = new NextRequest('http://localhost/api/recommendations', {
       method: 'POST',
+      // Origin localhost requis depuis S1.1 (origin check anti-CSRF)
+      headers: { origin: 'http://localhost' },
       body: JSON.stringify({}),
     })
     var res = await POST(req)

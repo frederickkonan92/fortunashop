@@ -28,18 +28,103 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Payload trop volumineux' }, { status: 413 })
     }
 
+    // --- ORIGIN CHECK : bloque les appels cross-origin ---
+    // Verifie que la requete vient bien de notre domaine (fortunashop.fr ou localhost en dev)
+    var origin = req.headers.get('origin') || ''
+    var referer = req.headers.get('referer') || ''
+    var isAllowedOrigin = origin.includes('fortunashop.fr')
+      || origin.includes('localhost')
+      || referer.includes('fortunashop.fr')
+      || referer.includes('localhost')
+
+    if (!isAllowedOrigin) {
+      console.warn('[SECURITY]', {
+        route: '/api/recommendations',
+        reason: 'origin_rejected',
+        origin: origin,
+        referer: referer,
+        timestamp: new Date().toISOString()
+      })
+      return NextResponse.json({ error: 'Origin non autorisee' }, { status: 403 })
+    }
+    // --- FIN ORIGIN CHECK ---
+
     var body = await req.json()
     var shopId = body.shop_id
-    if (!shopId) return NextResponse.json({ error: 'shop_id manquant' }, { status: 400 })
 
-    // Validation UUID shop_id
-    var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (typeof shopId !== 'string' || !uuidRegex.test(shopId)) {
+    // --- VALIDATION UUID : bloque les IDs malformes et le brute-force ---
+    var uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+    if (!shopId || typeof shopId !== 'string' || !uuidRegex.test(shopId)) {
+      console.warn('[SECURITY]', {
+        route: '/api/recommendations',
+        reason: 'invalid_uuid',
+        shopId: shopId,
+        timestamp: new Date().toISOString()
+      })
       return NextResponse.json({ error: 'shop_id invalide' }, { status: 400 })
     }
+    // --- FIN VALIDATION UUID ---
 
     var supabase = getSupabaseAdmin()
     var anthropic = getAnthropic()
+
+    // --- AUTH : separation stricte client USER (auth) vs ADMIN (donnees) ---
+    var authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('[SECURITY]', {
+        route: '/api/recommendations',
+        reason: 'missing_bearer_token',
+        timestamp: new Date().toISOString()
+      })
+      return NextResponse.json({ error: 'Non autorise' }, { status: 401 })
+    }
+
+    var token = authHeader.replace('Bearer ', '')
+
+    // Client USER (anon key + token) -> verifie l'identite
+    var supabaseUser = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      { global: { headers: { Authorization: 'Bearer ' + token } } }
+    )
+
+    var { data: userData, error: authError } = await supabaseUser.auth.getUser()
+
+    if (authError || !userData.user) {
+      console.warn('[SECURITY]', {
+        route: '/api/recommendations',
+        reason: 'invalid_token',
+        authError: authError?.message,
+        timestamp: new Date().toISOString()
+      })
+      return NextResponse.json({ error: 'Session invalide' }, { status: 401 })
+    }
+
+    // Verifie ownership via le client ADMIN (bypass RLS pour confirmer owner_id)
+    var { data: shopCheck, error: shopError } = await supabase
+      .from('shops')
+      .select('id')
+      .eq('id', shopId)
+      .eq('owner_id', userData.user.id)
+      .single()
+
+    if (shopError && shopError.code !== 'PGRST116') {
+      // PGRST116 = no rows trouvees (cas legitime), tout autre code = erreur reelle
+      console.error('[SECURITY] Erreur verification shop ownership:', shopError)
+      return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    }
+
+    if (!shopCheck) {
+      console.warn('[SECURITY]', {
+        route: '/api/recommendations',
+        reason: 'not_shop_owner',
+        userId: userData.user.id,
+        shopId: shopId,
+        timestamp: new Date().toISOString()
+      })
+      return NextResponse.json({ error: 'Acces refuse a cette boutique' }, { status: 403 })
+    }
+    // --- FIN AUTH ---
 
     // Vérifie si les recommandations ont moins de 24h
     var existing = await supabase
@@ -60,6 +145,39 @@ export async function POST(req: NextRequest) {
         })
       }
     }
+
+    // --- RATE LIMIT GLOBAL : max 50 appels Anthropic/jour (toutes boutiques confondues) ---
+    // Stocke en memoire du processus. Sur Vercel serverless, chaque instance cold-start a son propre compteur.
+    // Ce n'est PAS une protection parfaite. Filet de second niveau. Protection primaire = cache 24h/shop + auth Bearer.
+    var g = globalThis as any
+    if (!g.recommendationsRateLimit) {
+      g.recommendationsRateLimit = { count: 0, windowStart: Date.now() }
+    }
+
+    var rl = g.recommendationsRateLimit
+    var dayMs = 24 * 60 * 60 * 1000
+
+    if (Date.now() - rl.windowStart > dayMs) {
+      rl.count = 0
+      rl.windowStart = Date.now()
+    }
+
+    if (rl.count >= 50) {
+      console.warn('[SECURITY]', {
+        route: '/api/recommendations',
+        reason: 'global_rate_limit_exceeded',
+        count: rl.count,
+        timestamp: new Date().toISOString()
+      })
+      return NextResponse.json(
+        { error: 'Limite quotidienne atteinte. Reessayez demain.' },
+        { status: 429 }
+      )
+    }
+
+    // Incremente AVANT l'appel Anthropic (evite les depassements en parallele)
+    rl.count++
+    // --- FIN RATE LIMIT ---
 
     // Récupère les données de la boutique pour nourrir l'IA
     var [ordersRes, viewsRes, productsRes, physicalRes] = await Promise.all([
