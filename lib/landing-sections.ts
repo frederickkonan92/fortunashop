@@ -17,9 +17,9 @@ export var LANDING_ADDONS: LandingAddon[] = [
   { icon: '🌍', name: 'CB internationale Stripe', desc: 'Visa & Mastercard pour la diaspora et clients internationaux. Inclut accompagnement KYC.', price: '90 000 FCFA', type: 'setup unique', plans: 'Starter · Pro' },
   { icon: '📊', name: 'Pack Analytics', desc: 'Dashboard CA en temps réel, top produits, panier moyen, export CSV + recommandations IA mensuelles.', price: '20 000 FCFA', type: '/mois', plans: 'Starter · Pro' },
   { icon: '📈', name: 'Gestion des stocks', desc: 'Alertes stock bas, désactivation auto des produits épuisés, historique et stock tampon physique.', price: '10 000 FCFA', type: '/mois', plans: 'Starter · Pro' },
-  { icon: '🏷️', name: 'Codes promo & réductions', desc: 'Créez des codes promo pour fidéliser et relancer vos clients.', price: '20 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
+  { icon: '🏷️', name: 'Codes promo & réductions', desc: 'Créez des codes promo pour fidéliser et relancer vos clients. Bientôt disponible.', price: '20 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
   { icon: '🔗', name: 'Lien livraison livreur', desc: 'Le livreur confirme la remise en 1 clic. Le client est notifié automatiquement en temps réel.', price: '10 000 FCFA', type: '/mois', plans: 'Starter' },
-  { icon: '🎯', name: 'Bannière promo dynamique', desc: 'Bandeau personnalisable en haut de boutique avec offre spéciale ou compte à rebours.', price: '15 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
+  { icon: '🎯', name: 'Bannière promo dynamique', desc: 'Bandeau personnalisable en haut de boutique avec offre spéciale ou compte à rebours. Bientôt disponible.', price: '15 000 FCFA', type: 'setup unique', plans: 'Tous plans' },
   { icon: '🚗', name: 'Intégration Yango', desc: 'Dispatch automatique du livreur via Yango. Suivi temps réel pour vous et votre client. Bientôt disponible.', price: '75 000 + 10 000 FCFA', type: 'setup + /mois', plans: 'Tous plans' },
   { icon: '🌐', name: 'Domaine personnalisé', desc: 'Votre boutique sur votre propre nom de domaine (maboutique.ci ou .com). Inclut configuration DNS.', price: '50 000 + 5 000 FCFA', type: 'setup + /mois', plans: 'Pro · Premium' },
 ]
