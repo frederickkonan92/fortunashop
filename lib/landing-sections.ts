@@ -29,12 +29,12 @@ export type LandingFaq = { q: string; a: string }
 export var LANDING_FAQS: LandingFaq[] = [
   { q: 'Combien de temps pour avoir ma boutique ?', a: 'Votre boutique est livrée en 7 jours maximum après réception de votre catalogue et logo.' },
   { q: 'Est-ce que je dois savoir coder ?', a: "Non. Vous nous envoyez vos photos et prix via WhatsApp. On s'occupe de tout." },
-  { q: 'Quels modes de paiement sont acceptés ?', a: 'Wave est inclus dans tous les plans. Orange Money et MTN MoMo sont disponibles en add-on CinetPay. La carte bancaire est disponible avec Stripe (plan Premium).' },
+  { q: 'Quels modes de paiement sont acceptés ?', a: "Wave est inclus dans tous les plans. Les plans Pro et Premium incluent Orange Money et MTN MoMo nativement. Le plan Starter peut les ajouter via l'add-on Mobile Money CinetPay (75 000 FCFA setup). Le paiement par carte bancaire internationale (Visa/Mastercard) est en cours de déploiement pour le plan Premium." },
   { q: 'Puis-je modifier mon catalogue moi-même ?', a: "Oui, depuis votre espace admin. Le nombre de modifications mensuelles dépend de votre plan (10 pour Starter, 25 pour Pro, illimité pour Premium)." },
   { q: 'La livraison est-elle incluse ?', a: 'Nous intégrons votre livreur existant. Nous pouvons également vous mettre en relation avec nos partenaires livreurs à Abidjan.' },
   { q: 'Puis-je changer de plan ?', a: 'Oui, à tout moment. Contactez-nous sur WhatsApp et nous gérons la migration sans interruption de service.' },
   { q: 'La boutique fonctionne-t-elle sur mobile ?', a: 'Oui, votre boutique est 100% optimisée pour mobile. Vos clients commandent depuis leur téléphone en quelques clics.' },
-  { q: 'Est-ce que mes clients de la diaspora peuvent commander ?', a: 'Oui. Avec le plan Premium et Stripe, vos clients en France, Belgique, Canada peuvent payer par carte bancaire internationale.' },
+  { q: 'Est-ce que mes clients de la diaspora peuvent commander ?', a: 'Le paiement par carte bancaire internationale (Visa/Mastercard) est en cours de déploiement pour le plan Premium. Nous vous tiendrons informé dès que cette option sera disponible. En attendant, vos clients de la diaspora peuvent payer via Wave.' },
 ]
 
 export type LandingProblem = { icon: string; title: string; desc: string }
