@@ -152,11 +152,12 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
     setLoading(false)
   }
 
-  var paymentModes = [
+  var paymentModes: any[] = [
     { id: 'wave', label: 'Wave', icon: '🌊', desc: 'Paiement mobile Wave' },
     { id: 'orange_money', label: 'Orange Money', icon: '🟠', desc: 'Paiement Orange Money' },
     { id: 'mtn_momo', label: 'MTN MoMo', icon: '🟡', desc: 'Paiement MTN Mobile Money' },
-    { id: 'cb', label: 'Carte bancaire', icon: '💳', desc: 'Visa / Mastercard' },
+    // CB : intégration Stripe/CinetPay en cours, option grisée tant que non disponible
+    { id: 'cb', label: 'Carte bancaire', icon: '💳', desc: 'Visa / Mastercard', disabled: true, disabledMsg: 'Disponible prochainement' },
   ]
 
   var availableModes = paymentModes.filter(function(m) {
@@ -417,16 +418,19 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
             Mode de paiement
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {availableModes.map(function(mode) {
+            {availableModes.map(function(mode: any) {
               var isSelected = paymentMode === mode.id
+              var isDisabled = mode.disabled === true
               return (
                 <button key={mode.id} type="button"
-                  onClick={function() { setPaymentMode(mode.id) }}
+                  onClick={function() { if (!isDisabled) setPaymentMode(mode.id) }}
+                  disabled={isDisabled}
                   style={{
                     padding: '14px 16px', borderRadius: 12,
                     border: isSelected ? '2px solid ' + theme.primary : '1.5px solid #E8DDD0',
                     background: isSelected ? getLightColor(theme.primary, 0.06) : 'white',
-                    cursor: 'pointer', textAlign: 'left',
+                    cursor: isDisabled ? 'not-allowed' : 'pointer', textAlign: 'left',
+                    opacity: isDisabled ? 0.5 : 1,
                     transition: 'all 0.2s',
                     display: 'flex', alignItems: 'center', gap: 12,
                   }}
@@ -453,6 +457,11 @@ export default function CommanderClient({ slug, initialShop }: CommanderClientPr
                     <div style={{ fontSize: 12, color: '#7C6C58', marginTop: 2 }}>
                       {mode.desc}
                     </div>
+                    {isDisabled && mode.disabledMsg && (
+                      <div style={{ fontSize: 11, color: '#DC5014', marginTop: 4, fontStyle: 'italic' }}>
+                        {mode.disabledMsg}
+                      </div>
+                    )}
                   </div>
                 </button>
               )
