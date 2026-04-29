@@ -42,3 +42,24 @@ jobs:
           CI: true
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIn0.placeholder
+
+  guardian:
+    name: Guardian
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Check admin guards
+        run: npx tsx scripts/check-admin-guards.ts
+      - name: Check routes
+        run: npx tsx scripts/check-routes.ts
+      - name: Check RLS coverage
+        run: npx tsx scripts/check-rls-coverage.ts
+      - name: Invariant tests
+        run: npm run test

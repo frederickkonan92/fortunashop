@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "ci": "npm run test && npm run build",
-    "ci:e2e": "npm run test && npm run build && playwright test"
+    "ci:e2e": "npm run test && npm run build && playwright test",
+    "guardian": "tsx scripts/check-admin-guards.ts && tsx scripts/check-routes.ts && tsx scripts/check-rls-coverage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
@@ -31,6 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }
