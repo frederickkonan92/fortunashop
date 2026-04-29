@@ -45,39 +45,82 @@ Requises dans `.env.local` ET dans Vercel :
 
 ```
 app/
-├── page.tsx                              # Landing page (pricing, add-ons, formulaire)
+├── page.tsx                              # Landing page (coquille serveur)
+├── landing-client.tsx                    # Landing interactive (FAQ, formulaire, pricing)
 ├── layout.tsx                            # Layout racine
-├── api/recommendations/route.ts          # API IA Claude Haiku
+├── sitemap.ts                            # Sitemap dynamique (filtre boutiques test)
+├── api/
+│   ├── analytics/route.ts                # Tracking visiteurs (PUBLIC, rate-limit IP)
+│   ├── leads/route.ts                    # Formulaire landing (PUBLIC, escapeHtml)
+│   ├── orders/route.ts                   # Checkout (PUBLIC, prix serveur RPC)
+│   └── recommendations/route.ts          # IA Claude Haiku (GARDÉE Bearer + Origin)
 ├── admin/
-│   ├── page.tsx                          # Redirection admin
-│   ├── layout.tsx                        # Layout admin
+│   ├── page.tsx                          # Dashboard commandes + annulation/restock
+│   ├── layout.tsx                        # Layout admin (auth check)
 │   ├── nav.tsx                           # Navigation admin
-│   ├── login/page.tsx                    # Login artisan
-│   ├── dashboard/page.tsx                # Dashboard KPIs (Starter/Pro/Premium)
+│   ├── support-button.tsx                # Bouton support WhatsApp
+│   ├── login/{page,layout}.tsx           # Login artisan
+│   ├── dashboard/{page,layout}.tsx       # KPIs + Analytics (Pro/Premium) + IA (Premium)
 │   ├── produits/page.tsx                 # Gestion produits + variantes
-│   ├── ventes/page.tsx                   # Ventes physiques
-│   ├── livreurs/page.tsx                 # Gestion livreurs
-│   └── support-button.tsx               # Bouton support WhatsApp
+│   ├── produits/variant-form.tsx         # Formulaire variantes 1 ou 2 axes
+│   ├── ventes/page.tsx                   # Ventes physiques (natif Pro/Premium)
+│   ├── livreurs/page.tsx                 # Gestion livreurs (1/3/illimité)
+│   └── analytics/page.tsx                # Onglet Analytics dédié
 ├── boutique/[slug]/
 │   ├── page.tsx                          # Page boutique (charge catalogue)
 │   ├── catalogue.tsx                     # Catalogue client + popup variantes
-│   ├── commander/page.tsx                # Commande + paiement
-│   └── produit/[id]/page.tsx             # Fiche produit + sélecteur variantes
-├── livraison/
-│   ├── page.tsx                          # Suspense wrapper
-│   └── content.tsx                       # Confirmation livraison (token)
-└── suivi/
-    ├── page.tsx                          # Suspense wrapper
-    └── content.tsx                       # Suivi commande client
+│   ├── commander/page.tsx                # Wrapper commande
+│   ├── commander/commander-client.tsx    # Logique checkout + isCheckoutPaymentModeAllowed
+│   ├── commander/commander-parts.tsx     # FormField, Stepper
+│   └── produit/[id]/{page,content}.tsx   # Fiche produit + sélecteur variantes
+├── livraison/{page,content}.tsx          # Confirmation livraison (token)
+├── suivi/{page,content}.tsx              # Suivi commande client
+├── collecte/{page,collecte-content}.tsx  # Page collecte d'infos artisan
+├── cgu/page.tsx                          # CGU
+├── confidentialite/page.tsx              # Politique de confidentialité
+└── mentions-legales/page.tsx             # Mentions légales
 
 components/
 ├── cart.tsx                              # Panier (useCart hook)
-└── tracker.tsx                           # Analytics tracker (page_views)
+├── tracker.tsx                           # Analytics tracker (page_views)
+├── ai-recommendations.tsx                # Composant Claude Haiku (Bearer auth)
+├── shop-layout.tsx                       # ShopHeader + ShopFooter partagés
+├── help-panel.tsx                        # Panneau d'aide contextuel
+└── onboarding.tsx                        # Onboarding artisan premier login
 
 lib/
-├── supabase.ts                           # Client Supabase
-├── utils.ts                              # formatPrice + utilitaires
-└── cinetpay.ts                           # Intégration CinetPay
+├── supabase.js                           # Client Supabase (anon)
+├── plan-rules.ts                         # SOURCE DE VÉRITÉ : plans, paiement, limites
+├── landing-plans.ts                      # Cartes pricing landing (sync avec plan-rules)
+├── landing-sections.ts                   # FAQ + add-ons + steps landing
+├── boutique-catalog.ts                   # Fetch catalogue boutique (server)
+├── shop-checkout-fetch.ts                # Fetch shop pour checkout
+├── admin-data.ts                         # SHOP_SELECT, ORDER_SELECT, PRODUCT_SELECT
+├── analytics.ts                          # trackPageView, trackAddToCart, etc.
+├── variants.ts                           # getVariantAxes (1 ou 2 axes)
+├── theme.ts                              # getThemeColors, getLightColor
+├── order-status.ts                       # statusLabel, statusStyle
+├── logger.ts                             # logInfo, logError
+├── utils.ts                              # formatPrice, whatsappLink
+└── cinetpay.ts                           # Intégration CinetPay (KYC en cours)
+
+scripts/                                  # Outils Guardian + opérationnels
+├── check-admin-guards.ts                 # Scan routes API service role
+├── check-routes.ts                       # Détection liens orphelins
+├── check-rls-coverage.ts                 # Audit RLS depuis docs/rls-audit-*.md
+├── check-health.js                       # Health-check opérationnel
+└── create-shop.js                        # Wizard CLI création boutique
+
+tests/
+├── api/                                  # Tests smoke routes API
+├── unit/                                 # Tests unitaires (plan-rules, utils)
+└── unit/invariants/                      # 3 invariants Guardian (15 tests)
+
+docs/
+├── security-status.md                    # État sécurité routes API
+├── rls-audit-2026-04-29.md               # Audit RLS Supabase
+├── rls-audit-query.sql                   # Requête SQL audit RLS réutilisable
+└── fortunashop-guardrails.md             # Protocole Guardian (5 règles)
 ```
 
 ---
@@ -125,7 +168,7 @@ Add-ons activés pour une boutique (ex: `['cinetpay', 'analytics']`).
 | Pro | natif | natif | natif | addon stripe | si retrait |
 | Premium | natif | natif | natif | natif | si retrait |
 
-La logique de filtrage est dans `app/boutique/[slug]/commander/page.tsx`.
+La logique de filtrage est dans `lib/plan-rules.ts` (`isCheckoutPaymentModeAllowed`), appelée depuis `app/boutique/[slug]/commander/commander-client.tsx`.
 
 ---
 
@@ -312,16 +355,16 @@ git push
 ## Tâches en cours (backlog priorisé)
 
 ### 🔴 Tier 1 — bloquant pour signer un client
-1. Fix bug modes paiement Pro/Premium — RÉSOLU (`isCheckoutPaymentModeAllowed` dans `lib/plan-rules.ts`)
+1. ~~Fix bug modes paiement Pro/Premium~~ — ✅ RÉSOLU (`isCheckoutPaymentModeAllowed` dans `lib/plan-rules.ts`)
 2. Test boutique démo en prod
 3. Footer lien fortunashop.fr (boucle acquisition)
-4. Mentions légales / CGU / Confidentialité
+4. ~~Mentions légales / CGU / Confidentialité~~ — ✅ RÉSOLU (`app/cgu/`, `app/confidentialite/`, `app/mentions-legales/`)
 
 ### 🟡 Tier 2 — utile, pas bloquant
 5. OG tags + generateMetadata (SEO + aperçu WhatsApp)
 6. next/image sur catalogue + fiche produit (perf mobile)
-7. Sitemap automatique
-8. Page onboarding artisan (4 étapes cochables au premier login)
+7. ~~Sitemap automatique~~ — ✅ RÉSOLU (`app/sitemap.ts`, filtre `is_active` + exclusion boutiques test)
+8. ~~Page onboarding artisan (4 étapes cochables au premier login)~~ — ✅ RÉSOLU (`components/onboarding.tsx`)
 
 ### ⚪ Tier 3 — reporté
 9. CI/CD staging (utiliser Preview Deployments Vercel à la place)
