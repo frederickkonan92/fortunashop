@@ -1,7 +1,7 @@
 # CLAUDE.md — fortunashop
 
 > Ce fichier est lu automatiquement par Claude Code au démarrage.
-> Dernière mise à jour : 29 mars 2026
+> Dernière mise à jour : 29 avril 2026
 
 ---
 
@@ -37,6 +37,7 @@ Requises dans `.env.local` ET dans Vercel :
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ANTHROPIC_API_KEY`
+- `BREVO_API_KEY` — clé API Brevo pour l'envoi d'emails de notification leads
 
 ---
 
@@ -61,7 +62,6 @@ app/
 │   ├── page.tsx                          # Page boutique (charge catalogue)
 │   ├── catalogue.tsx                     # Catalogue client + popup variantes
 │   ├── commander/page.tsx                # Commande + paiement
-│   ├── paiement.tsx                      # Composant paiement
 │   └── produit/[id]/page.tsx             # Fiche produit + sélecteur variantes
 ├── livraison/
 │   ├── page.tsx                          # Suspense wrapper
@@ -150,6 +150,19 @@ La logique de filtrage est dans `app/boutique/[slug]/commander/page.tsx`.
 | Premium | 85 000 FCFA | 70 833 FCFA/mois | 100 000 FCFA |
 
 Toggle annuel = 2 mois offerts (10 mois payés).
+
+---
+
+## Routes API
+
+| Route | Méthode | Auth | Statut |
+|---|---|---|---|
+| /api/recommendations | POST | Bearer + Origin + UUID + rate-limit 50/jour | GARDÉE |
+| /api/leads | POST | Aucune (public) | PUBLIC — escapeHtml + validation |
+| /api/orders | POST | Aucune (public) | PUBLIC — prix serveur + RPC atomique |
+| /api/analytics | POST | Aucune (public) | PUBLIC — rate-limit IP 100/min |
+
+Routes publiques intentionnelles : marquées par un commentaire `// PUBLIC ROUTE` en tête de fichier (vérifié par l'invariant `admin-routes-guarded`).
 
 ---
 
@@ -286,3 +299,112 @@ git push
 8. **Si un fichier dépasse 500 lignes**, demander confirmation avant de le réécrire entièrement.
 9. **Commit messages** : format `type: description` (ex: `fix: modes paiement Pro/Premium`).
 10. **Ne jamais toucher aux variables d'environnement** ou aux clés API.
+
+---
+
+## 🛡️ Règles Guardian (obligatoires)
+
+### Règle 1 — Diagnostic avant tout code
+Avant toute modification de code, toute évolution ou toute mise à jour, un diagnostic lecture seule de l'existant DOIT être réalisé. Aucun code ne doit être écrit à l'aveugle.
+
+Workflow obligatoire :
+1. Lire le CLAUDE.md en entier
+2. Exécuter un diagnostic ciblé sur les fichiers concernés (lecture seule, aucune modification)
+3. Produire un rapport factuel de l'état actuel
+4. Seulement APRÈS le diagnostic : écrire le code
+
+Ce principe s'applique à Claude Opus (stratège), Claude Code (backend) et Cursor (frontend). Aucune exception, même pour les "petits fix".
+
+### Règle 2 — Mise à jour du CLAUDE.md après chaque session
+Le CLAUDE.md est la source de vérité vivante du projet. Il DOIT être mis à jour à la fin de chaque session de travail avec :
+- Les fichiers créés, modifiés ou supprimés
+- Les décisions techniques prises
+- Les bugs corrigés
+- L'état de la sécurité (routes gardées, tests ajoutés, etc.)
+
+Format de mise à jour : ajouter une entrée dans la section "Historique des sessions" avec la date, les actions effectuées et les fichiers impactés.
+
+### Règle 3 — Mode strict build + tests
+Après chaque modification de code :
+
+```bash
+npm run build 2>&1 | tee /tmp/build.log
+npm run test 2>&1 | tee /tmp/test.log
+```
+
+Si l'un des deux échoue → rollback immédiat (`git restore .`). Interdiction absolue de committer du code qui ne build pas ou dont les tests échouent.
+
+### Règle 4 — Workflow 3 IA
+- **Claude Opus** : stratégie, specs, prompts, review. Ne touche PAS au code.
+- **Claude Code** : backend, logique métier, tests, CI. Exécute les prompts d'Opus.
+- **Cursor** : frontend, UI, design. Ne modifie PAS le backend.
+
+Chaque IA fait ce qu'elle fait de mieux, et rien d'autre.
+
+---
+
+## Historique des sessions
+
+### Session 1 Guardian — 2026-04-29 (sécurisation P0)
+
+Actions réalisées :
+- ✅ Auth Bearer + Origin check + UUID validation + logging sur `/api/recommendations`
+- ✅ Rate-limit global 50 calls/jour sur `/api/recommendations`
+- ✅ Suppression `/api/send-lead-email` (doublon non sécurisé avec injection HTML)
+- ✅ Mise à jour Next.js 16.1.6 → 16.2.4 (fix CVE high)
+- ✅ Branch protection GitHub activée (`enforce_admins: true`, required check : `check`)
+- ✅ CI workflow poussé sur GitHub (`.github/` retiré du `.gitignore`)
+- ✅ PR #1 mergée (schéma Supabase + audit RLS + doc sécurité)
+- ✅ Audit RLS : 14/14 tables avec RLS activé et policies en place
+- ⚠️ Dump schéma Supabase : `supabase init` + `config.toml` créés, mais `db dump` nécessite Docker (skippé volontairement)
+
+Fichiers impactés :
+- `app/api/recommendations/route.ts` (M) — +98 lignes sécurité
+- `app/api/send-lead-email/route.ts` (D) — supprimé
+- `components/ai-recommendations.tsx` (M) — header `Authorization` ajouté
+- `tests/api/recommendations-smoke.test.ts` (M) — header `origin` ajouté
+- `package.json` (M) — `next ^16.2.4`
+- `.gitignore` (M) — `.github/` retiré
+- `.github/workflows/ci.yml` (A) — poussé sur GitHub
+- `docs/security-status.md` (A) — état de sécurité documenté
+- `docs/rls-audit-2026-04-29.md` (A) — résultat audit RLS
+- `docs/rls-audit-query.sql` (A) — requête SQL pour audit manuel
+- `supabase/config.toml` (A) — config CLI Supabase
+
+Décisions techniques :
+- Séparation client USER (anon + Bearer) vs ADMIN (service role) dans les routes API
+- Rate-limit en mémoire (`globalThis`) documenté comme limitation Vercel serverless
+- Routes publiques intentionnelles marquées avec commentaire `// PUBLIC ROUTE`
+- `required_approving_review_count: 0` (solo founder, pas de review obligatoire)
+
+### Session 2 Guardian — 2026-04-29 (tests d'invariants)
+
+Actions réalisées :
+- ✅ Suppression `app/boutique/[slug]/paiement.tsx` orphelin (logique gating incorrecte, 0 import)
+- ✅ Création dossier `tests/unit/invariants/` (couvert par le pattern Vitest existant)
+- ✅ Invariant `payment-gating-single-source.test.ts` (7 tests) — empêche la régression du bug Orange Money/MoMo
+- ✅ Invariant `admin-routes-guarded.test.ts` (3 tests) — empêche une route service role sans guard
+- ✅ Invariant `variants-restock-coherence.test.ts` (5 tests) — vérifie restock parent + variante à l'annulation
+- ✅ Marqueurs `// PUBLIC ROUTE` ajoutés en tête de `leads`, `orders`, `analytics`
+- ✅ PR #2 mergée (44 tests passent : 29 existants + 15 nouveaux)
+
+Fichiers impactés :
+- `app/boutique/[slug]/paiement.tsx` (D) — supprimé (-36 lignes)
+- `app/api/leads/route.ts` (M) — commentaire `// PUBLIC ROUTE`
+- `app/api/orders/route.ts` (M) — commentaire `// PUBLIC ROUTE`
+- `app/api/analytics/route.ts` (M) — commentaire `// PUBLIC ROUTE`
+- `tests/unit/invariants/payment-gating-single-source.test.ts` (A) — 7 tests
+- `tests/unit/invariants/admin-routes-guarded.test.ts` (A) — 3 tests
+- `tests/unit/invariants/variants-restock-coherence.test.ts` (A) — 5 tests
+
+Décisions techniques :
+- Invariants par analyse statique (lecture du source code) plutôt que par mock — pas de dépendance Supabase
+- Le pattern `tests/**/*.test.ts` de `vitest.config.ts` couvre automatiquement le nouveau dossier `invariants/`
+- L'invariant `admin-routes-guarded` accepte 3 marqueurs : `// PUBLIC ROUTE`, `Authorization`/`Bearer`, ou `rateMap`/`RateLimit`
+
+État sécurité actuel :
+- `/api/recommendations` : GARDÉE (Bearer + Origin + UUID + rate-limit + logging)
+- `/api/leads` : PUBLIC (intentionnel, `escapeHtml` + validation)
+- `/api/orders` : PUBLIC (intentionnel, prix serveur + RPC atomique)
+- `/api/analytics` : PUBLIC (intentionnel, rate-limit IP + UUID + events whitelist)
+- `/api/send-lead-email` : SUPPRIMÉE
