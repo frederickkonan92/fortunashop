@@ -408,3 +408,40 @@ Décisions techniques :
 - `/api/orders` : PUBLIC (intentionnel, prix serveur + RPC atomique)
 - `/api/analytics` : PUBLIC (intentionnel, rate-limit IP + UUID + events whitelist)
 - `/api/send-lead-email` : SUPPRIMÉE
+
+### Session 3 Guardian — 2026-04-29 (scripts de cohérence + CI + protocole IA)
+
+Actions réalisées :
+- ✅ Nettoyage PAT GitHub exposé dans remote origin (`git remote set-url`)
+- ✅ Suppression branches remote orphelines (déjà supprimées côté remote, refs locales prunées)
+- ✅ `tsx` ajouté aux devDependencies (^4.21.0)
+- ✅ Script `scripts/check-admin-guards.ts` (scan routes API service role)
+- ✅ Script `scripts/check-routes.ts` (détection liens orphelins)
+- ✅ Script `scripts/check-rls-coverage.ts` (vérification RLS depuis audit markdown)
+- ✅ Job `guardian` ajouté à la CI (parallèle au job `check`)
+- ✅ Protocole IA `docs/fortunashop-guardrails.md`
+- ✅ Script npm `guardian` pour lancer les 3 checks en local
+- ⏳ Required status checks `["check", "Guardian"]` à activer après merge (le check Guardian doit avoir tourné une fois pour être référençable)
+
+Fichiers impactés :
+- `scripts/check-admin-guards.ts` (A) — 131 lignes
+- `scripts/check-routes.ts` (A) — 164 lignes
+- `scripts/check-rls-coverage.ts` (A) — 116 lignes
+- `.github/workflows/ci.yml` (M) — job `guardian` ajouté
+- `docs/fortunashop-guardrails.md` (A) — 93 lignes
+- `package.json` (M) — `tsx` devDependency + script `guardian`
+- `CLAUDE.md` (M) — historique Session 3
+
+Décisions techniques :
+- Scripts en TypeScript exécutés via `tsx` (cohérent avec stack Next.js TS)
+- `let entries` sans annotation `ReturnType<typeof readdirSync>` (overloads ambigus en TS strict)
+- Job `guardian` parallèle au job `check` (gain de feedback ~1 min, échec isolé)
+- `npm run guardian` utilise `tsx` direct (devDep) au lieu de `npx tsx`
+- Required check Guardian à ajouter par `gh api PUT` après le 1er run réussi
+
+État Guardian complet :
+- Couche 1 (branch protection) : ✅ enforce_admins + required check `check` (Guardian à ajouter post-merge)
+- Couche 2 (tests invariants) : ✅ 15 tests (3 fichiers)
+- Couche 3 (scripts cohérence) : ✅ 3 scripts (admin-guards, routes, rls-coverage)
+- Couche 4 (protocole IA) : ✅ `docs/fortunashop-guardrails.md`
+- Couche 5 (workflow 3 IA) : ✅ documenté dans CLAUDE.md + guardrails
